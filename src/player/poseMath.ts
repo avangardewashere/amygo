@@ -5,7 +5,8 @@ import type { Activity } from '../interaction/gymStore'
 import { PRESS, pressDistance } from '../equipment/legPressGeometry'
 import { LYING_HIP, SEATED_HIP } from '../equipment/benchGeometry'
 import { FLY, flyAngle } from '../equipment/chestFlyGeometry'
-import { FOOT_DROP, KNEE_DROP, SHOE_Y } from './proportions'
+import { BIKE, crankAngle, footOnPedal } from '../equipment/bikeGeometry'
+import { ELBOW_DROP, FOOT_DROP, HAND_DROP, HIP_Y, KNEE_DROP, SHOE_Y, SHOULDER_Y } from './proportions'
 
 const FEET_FORWARD = 0.38 // seated: feet planted this far in front of the hips
 
@@ -26,17 +27,29 @@ export const arm = (pose: Partial<ArmPose>): ArmPose => ({
 })
 
 // The whole body for one moment of an exercise:
-//   lean: how far the body tips back at the hips (−π/2 = lying flat)
-//   foot: where the feet go, relative to the hips (z forward, y up); null = walking legs
-//   arms: the pose of each arm; side is +1 for the left, −1 for the right
-export type BodyPose = { lean: number; foot: { z: number; y: number } | null; arms: (side: number) => ArmPose }
+//   lean: how far the body tips at the hips: positive forward (bike), negative
+//         back (leg press; −π/2 = lying flat on the bench)
+//   foot: where each foot goes, relative to the hips (z forward, y up); null = walking legs
+//   arms: the pose of each arm
+//   follow: hands or feet must keep up with a moving machine part (pedals,
+//           a sled, handles), so joints track their targets closely instead
+//           of easing in gently
+// side is +1 for the left, −1 for the right
+type Spot = { z: number; y: number }
+export type BodyPose = {
+  lean: number
+  foot: ((side: number) => Spot) | null
+  arms: (side: number) => ArmPose
+  follow?: boolean
+}
 
 // Sitting upright with both feet flat on the floor in front
-const seatedFeet = (hipY: number) => ({ z: FEET_FORWARD, y: SHOE_Y - hipY })
+const seatedFeet = (hipY: number) => () => ({ z: FEET_FORWARD, y: SHOE_Y - hipY })
 
-// Every exercise as a body pose. t: where in the rep (0 → 1 → 0, see reps.ts).
+// Every exercise as a body pose. t: where in the rep (0 → 1 → 0, see reps.ts);
+// seconds: time since starting (for things that keep going round, like pedals).
 // Exercises not listed (walking and running on the treadmill) use the walking pose.
-export function exercisePose(activity: Pick<Activity, 'kind'>, t: number): BodyPose | null {
+export function exercisePose(activity: Pick<Activity, 'kind'>, t: number, seconds = 0): BodyPose | null {
   switch (activity.kind) {
     case 'curl':
       // Upper arms stay by the sides; only the elbows bend, bringing the weights up
@@ -50,7 +63,8 @@ export function exercisePose(activity: Pick<Activity, 'kind'>, t: number): BodyP
       const d = pressDistance(t)
       return {
         lean: -PRESS.lean,
-        foot: { z: PRESS.dirZ * d, y: PRESS.dirY * d },
+        follow: true,
+        foot: () => ({ z: PRESS.dirZ * d, y: PRESS.dirY * d }),
         arms: (s) => arm({ shoulderX: 0.6, shoulderZ: s * 0.12, elbowX: -0.5 }),
       }
     }
@@ -60,7 +74,7 @@ export function exercisePose(activity: Pick<Activity, 'kind'>, t: number): BodyP
       // the sides, forearms pointing up.
       return {
         lean: -Math.PI / 2,
-        foot: { z: 0.35, y: SHOE_Y - LYING_HIP.y },
+        foot: () => ({ z: 0.35, y: SHOE_Y - LYING_HIP.y }),
         arms: (s) => arm({ shoulderX: -1.55 * (1 - t), shoulderZ: s * 1.45 * t, elbowX: -0.05 - 1.55 * t }),
       }
     case 'shoulderPress':
@@ -77,11 +91,36 @@ export function exercisePose(activity: Pick<Activity, 'kind'>, t: number): BodyP
       // chest; the machine's arms use the very same sweep angle (flyAngle).
       return {
         lean: 0,
+        follow: true,
         foot: seatedFeet(FLY.hipY),
         arms: (s) => arm({ shoulderZ: s * (Math.PI / 2), shoulderY: -s * flyAngle(t), elbowZ: s * (Math.PI / 2) }),
       }
+    case 'ride':
+    case 'sprint':
+      return bikePose(activity.kind === 'sprint' ? 'sprint' : 'easy', seconds)
     default:
       return null
+  }
+}
+
+// On the bike: leaning forward, each foot on its pedal going round, hands on
+// the handlebars. Feet and hands are worked out with the two-bone maths below.
+function bikePose(pace: 'easy' | 'sprint', seconds: number): BodyPose {
+  const lean = BIKE.lean[pace]
+  const angle = crankAngle(BIKE.cadence[pace], seconds)
+  // Leaning forward moves the shoulders forward and down; find where they are
+  const rise = SHOULDER_Y - HIP_Y
+  const shoulder = { z: BIKE.hipZ + rise * Math.sin(lean), y: BIKE.hipY + rise * Math.cos(lean) }
+  const grip = reachWithHand(BIKE.bar.z - shoulder.z, BIKE.bar.y - shoulder.y)
+  return {
+    lean,
+    follow: true,
+    foot: (side) => {
+      const foot = footOnPedal(side, angle)
+      return { z: foot.z - BIKE.hipZ, y: foot.y - BIKE.hipY }
+    },
+    // Shoulders sit inside the leaning body, so subtract the lean (as for hips)
+    arms: () => arm({ shoulderX: wrap(grip.upper - lean), elbowX: wrap(grip.lower - grip.upper) }),
   }
 }
 
@@ -94,26 +133,37 @@ export const wrap = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angl
 // it along a direction instead (z = forward, y = up).
 const pointAlong = (z: number, y: number) => Math.atan2(-z, -y)
 
-// "Inverse kinematics" for one leg: given where the foot must be (relative to
-// the hip; z forward, y up), work out how to bend the hip and knee to reach it.
-// Returns the thigh's and shin's rotations as seen from the room.
-export function reachWithFoot(z: number, y: number) {
-  // Can't reach further than a straight leg
+// "Inverse kinematics" for a two-part limb (thigh + shin, or upper arm +
+// forearm): given where its end must be (relative to the joint it hangs from;
+// z forward, y up), work out the angle of each part. Returns both parts'
+// rotations as seen from the room.
+//   bend +1: the middle joint goes up and forward (a knee)
+//   bend −1: it goes down and back (an elbow reaching forward)
+function twoBoneReach(z: number, y: number, first: number, second: number, bend: 1 | -1) {
+  // Can't reach further than the limb held straight
   const distance = Math.hypot(z, y)
-  const reach = Math.min(distance, KNEE_DROP + FOOT_DROP - 0.001)
-  const footZ = (z / distance) * reach
-  const footY = (y / distance) * reach
-  // Law of cosines: the angle at the hip between the thigh and the hip→foot line
-  const hipBend = Math.acos((KNEE_DROP ** 2 + reach ** 2 - FOOT_DROP ** 2) / (2 * KNEE_DROP * reach))
-  // Bend so the knee goes up and forward (not backward through the seat)
-  const thighAngle = Math.atan2(footY, footZ) + hipBend
-  const kneeZ = KNEE_DROP * Math.cos(thighAngle)
-  const kneeY = KNEE_DROP * Math.sin(thighAngle)
+  const reach = Math.min(distance, first + second - 0.001)
+  const endZ = (z / distance) * reach
+  const endY = (y / distance) * reach
+  // Law of cosines: the angle at the top joint between the first part and the line to the end
+  const topBend = Math.acos((first ** 2 + reach ** 2 - second ** 2) / (2 * first * reach))
+  const firstAngle = Math.atan2(endY, endZ) + bend * topBend
+  const middleZ = first * Math.cos(firstAngle)
+  const middleY = first * Math.sin(firstAngle)
   return {
-    thigh: pointAlong(Math.cos(thighAngle), Math.sin(thighAngle)),
-    shin: pointAlong(footZ - kneeZ, footY - kneeY),
+    upper: pointAlong(Math.cos(firstAngle), Math.sin(firstAngle)),
+    lower: pointAlong(endZ - middleZ, endY - middleY),
   }
 }
+
+// One leg: bend so the knee goes up and forward (not backward through the seat)
+export function reachWithFoot(z: number, y: number) {
+  const { upper, lower } = twoBoneReach(z, y, KNEE_DROP, FOOT_DROP, 1)
+  return { thigh: upper, shin: lower }
+}
+
+// One arm reaching forward: the elbow drops below the line to the hand
+export const reachWithHand = (z: number, y: number) => twoBoneReach(z, y, ELBOW_DROP, HAND_DROP, -1)
 
 // Hip and knee joint angles that put a foot on its spot. The hips sit inside
 // the leaning body, so the body's current lean is subtracted to get the hip

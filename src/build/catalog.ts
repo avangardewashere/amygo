@@ -8,6 +8,8 @@ import { BENCH_DEPTH, BENCH_WIDTH, Bench } from '../equipment/Bench'
 import { LYING_HIP, placeHips } from '../equipment/benchGeometry'
 import { CHEST_FLY_DEPTH, CHEST_FLY_WIDTH, ChestFly } from '../equipment/ChestFly'
 import { FLY } from '../equipment/chestFlyGeometry'
+import { BIKE_DEPTH, BIKE_WIDTH, Bike } from '../equipment/Bike'
+import { BIKE } from '../equipment/bikeGeometry'
 
 // Where the person goes to use a machine they get on (or into), in the
 // machine's own coordinates: z along its length, y the height of the
@@ -75,6 +77,16 @@ export const CATALOG = {
     menuSubtitle: 'Pick an exercise',
     tagHeight: 2.1,
     standAt: placeHips({ y: FLY.hipY, z: FLY.hipZ }),
+  },
+  bike: {
+    name: 'Stationary bike',
+    width: BIKE_WIDTH,
+    depth: BIKE_DEPTH,
+    Model: Bike,
+    menuSubtitle: 'Pick a pace',
+    tagHeight: 1.6,
+    // On the saddle
+    standAt: placeHips({ y: BIKE.hipY, z: BIKE.hipZ }),
   },
 } satisfies Record<string, CatalogEntry>
 

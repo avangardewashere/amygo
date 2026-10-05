@@ -34,6 +34,8 @@ const store = createStore<BuildState>({
     { id: 'bench-1', type: 'bench', x: 2.5, z: 3.5, turns: 0 },
     // Back to the right-hand wall, facing into the room (1 quarter turn = facing -x)
     { id: 'chestfly-1', type: 'chestFly', x: 8.5, z: 1, turns: 1 },
+    // Beside the treadmill, facing the back wall like it does
+    { id: 'bike-1', type: 'bike', x: 5.25, z: -4.9, turns: 2 },
   ],
   selectedId: null,
   drag: null,

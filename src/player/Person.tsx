@@ -1,7 +1,7 @@
 import { useRef, type ReactNode, type RefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { MathUtils, type Group } from 'three'
-import { repProgress, type Activity } from '../interaction/gymStore'
+import { repProgress, secondsSince, type Activity } from '../interaction/gymStore'
 import { arm, exercisePose, legAngles } from './poseMath'
 import {
   ELBOW_DROP,
@@ -37,6 +37,9 @@ const LOADED_ARM_SWING = 0.35 // an arm carrying weight swings much less
 const RELAXED_ELBOW = -0.1 // arms hang with a tiny bend, not locked straight
 const RUNNING_ELBOW = -1.5 // runners pump their arms bent at about 90°
 const JOINT_EASE = 14 // how fast joints move toward their target angle
+// Following a moving machine part (pedals at 72 rpm move ~1.3 m/s): easing at
+// JOINT_EASE would let hands and feet trail ~7 cm behind, so track closely
+const FOLLOW_EASE = 60
 const POSTURE_EASE = 8 // how fast the body leans back into a seat or lies down
 
 // What any body for the player receives (so looks can be swapped, see <Player>)
@@ -58,8 +61,9 @@ export function Person({ gait, hands = {}, activity = null }: PersonProps) {
     const amount = gait.current.amount
     phase.current += delta * STRIDE_SPEED * amount
     const swing = Math.sin(phase.current) * SWING * amount
-    const pose = activity ? exercisePose(activity, repProgress(activity)) : null
-    const ease = (from: number, to: number, speed = JOINT_EASE) => MathUtils.damp(from, to, speed, delta)
+    const pose = activity ? exercisePose(activity, repProgress(activity), secondsSince(activity)) : null
+    const jointSpeed = pose?.follow ? FOLLOW_EASE : JOINT_EASE
+    const ease = (from: number, to: number, speed = jointSpeed) => MathUtils.damp(from, to, speed, delta)
 
     // Small bounce: the body rises twice per stride
     body.current!.position.y = Math.abs(Math.sin(phase.current)) * 0.04 * amount
@@ -71,8 +75,8 @@ export function Person({ gait, hands = {}, activity = null }: PersonProps) {
     // ---- Legs ----
     // Feet planted somewhere (sled, floor while seated or lying): bend hips and
     // knees to reach (see poseMath.ts). Otherwise: walking legs.
-    const planted = pose?.foot ? legAngles(pose.foot, lean.rotation.x) : null
     ;[1, -1].forEach((side, i) => {
+      const planted = pose?.foot ? legAngles(pose.foot(side), lean.rotation.x) : null
       const legSwing = side * swing // legs opposite to each other
       const hipTarget = planted ? planted.hip : legSwing
       // Walking: the knee bends while that leg is behind you, like a real stride

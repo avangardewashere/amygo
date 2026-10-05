@@ -6,6 +6,7 @@ import type { FurnitureType } from '../build/catalog'
 import { catalogEntry, type StandAt } from '../build/catalog'
 import { SEATED_HIP, placeHips } from '../equipment/benchGeometry'
 import { machine } from '../equipment/machineState'
+import { BIKE } from '../equipment/bikeGeometry'
 import { repPhase, repsSince } from './reps'
 
 // Game state that both the 3D scene and the on-screen menus need to see.
@@ -21,6 +22,8 @@ export type ExerciseKind =
   | 'benchPress'
   | 'shoulderPress'
   | 'chestFly'
+  | 'ride'
+  | 'sprint'
 
 type Point = { x: number; z: number }
 
@@ -72,7 +75,9 @@ type Exercise = {
   machine: FurnitureType // which furniture offers it
   name: string // label in the menu
   doing: string // headline in the popup while doing it
-  speed?: number // treadmill belt speed, m/s
+  speed?: number // m/s: treadmill belt speed, or how fast you'd be cycling
+  stride?: number // treadmill: how hard the legs work (1 = normal walk)
+  cadence?: number // bike: pedal turns per second
   // Dumbbells in both hands, and how they're held: bar side to side ('across')
   // or pointing ahead ('forward')
   weights?: 'across' | 'forward'
@@ -87,8 +92,8 @@ export const EXERCISES: Record<ExerciseKind, Exercise> = {
     doing: 'Doing lateral raises',
     weights: 'forward',
   },
-  walk: { machine: 'treadmill', name: 'Walk', doing: 'Walking', speed: 1.5 },
-  run: { machine: 'treadmill', name: 'Run', doing: 'Running', speed: 3 },
+  walk: { machine: 'treadmill', name: 'Walk', doing: 'Walking', speed: 1.5, stride: 0.8 },
+  run: { machine: 'treadmill', name: 'Run', doing: 'Running', speed: 3, stride: 1.5 },
   legPress: { machine: 'legPress', name: 'Leg press', doing: 'Doing leg presses' },
   benchPress: { machine: 'bench', name: 'Dumbbell bench press', doing: 'Doing bench presses', weights: 'across' },
   shoulderPress: {
@@ -99,6 +104,8 @@ export const EXERCISES: Record<ExerciseKind, Exercise> = {
     standAt: placeHips(SEATED_HIP), // sitting on the end of the bench instead of lying
   },
   chestFly: { machine: 'chestFly', name: 'Chest fly', doing: 'Doing chest flies' },
+  ride: { machine: 'bike', name: 'Easy ride', doing: 'Cycling', speed: 20 / 3.6, cadence: BIKE.cadence.easy },
+  sprint: { machine: 'bike', name: 'Sprint', doing: 'Sprinting', speed: 32 / 3.6, cadence: BIKE.cadence.sprint },
 }
 
 // Exercises done with dumbbells in your hands
@@ -107,9 +114,9 @@ export const isArmExercise = (kind: ExerciseKind) => EXERCISES[kind].weights !==
 // Where in the current rep we are: 0 → 1 → 0 (see reps.ts)
 export const repProgress = (activity: Activity, now = performance.now()) => repPhase(activity.startedAt, now)
 
-export const secondsSince = (activity: Activity, now = performance.now()) => (now - activity.startedAt) / 1000
+export const secondsSince = (activity: Pick<Activity, 'startedAt'>, now = performance.now()) => (now - activity.startedAt) / 1000
 
-export const repsDone = (activity: Activity, now = performance.now()) => repsSince(activity.startedAt, now)
+export const repsDone = (activity: Pick<Activity, 'startedAt'>, now = performance.now()) => repsSince(activity.startedAt, now)
 
 // A point given relative to a piece of furniture (its own left/right and
 // front/back) → where that is in the room, after the piece's rotation
@@ -145,6 +152,7 @@ function startExercise(kind: ExerciseKind) {
   // Tell the machine it's running, so its moving parts (belt, sled) animate
   machine.activeId = piece.id
   machine.speed = EXERCISES[kind].speed ?? 0
+  machine.cadence = EXERCISES[kind].cadence ?? 0
   machine.startedAt = base.startedAt
   store.set({ activity, menu: null })
 }
@@ -153,6 +161,7 @@ export function stopExercise() {
   if (!store.get().activity) return
   machine.activeId = null
   machine.speed = 0
+  machine.cadence = 0
   store.set({ activity: null, menu: null })
 }
 

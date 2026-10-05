@@ -40,8 +40,8 @@ export function limbEnds(pose: BodyPose, origin: Origin = {}): LimbEnds {
   posture.rotation.x = pose.lean
   const body = joint(posture, 0, -HIP_Y)
 
-  const legs = pose.foot ? legAngles(pose.foot, pose.lean) : { hip: 0, knee: 0 }
   const feet = [1, -1].map((side) => {
+    const legs = pose.foot ? legAngles(pose.foot(side), pose.lean) : { hip: 0, knee: 0 }
     const hip = joint(body, side * HIP_X, HIP_Y)
     hip.rotation.x = legs.hip
     const knee = joint(hip, 0, -KNEE_DROP)

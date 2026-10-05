@@ -98,7 +98,9 @@ changes, but every later machine can now be checked by maths instead of by eye.
 saddle leaning slightly forward with hands on the handlebars, and pedals: the crank arms turn and the flywheel spins. The
 popup shows speed, distance and time, the same way the treadmill does: "Cycling · 20 km/h · 0.15 km · 0:27".
 
-**Exercises:** Easy ride (about 20 km/h, slow cadence) and Sprint (about 32 km/h, fast cadence, standing a little off the saddle).
+**Exercises:** Easy ride (20 km/h, 72 pedal turns a minute) and Sprint (32 km/h, 102 a minute, leaning further forward).
+(The plan first said Sprint would stand a little off the saddle. That would push the legs past straight at the bottom of
+the pedal circle, so Sprint leans further forward instead.)
 
 **How:**
 - `bikeGeometry.ts`: saddle, crank centre, crank length. Shared by the bike and the person, like the leg press.
@@ -115,8 +117,15 @@ popup shows speed, distance and time, the same way the treadmill does: "Cycling 
 | V2B1-T2 | The pedals are always half a turn apart |
 | V2B1-T3 | The leg never has to stretch past straight anywhere on the circle (the saddle height fits) |
 | V2B1-T4 | Popup text: speed in km/h, and distance = speed × time |
+| V2B1-T5 | Both hands rest on the handlebars at both paces (added: the arms got the same two-bone maths as the legs) |
 
 **Visual check:** feet on the pedals, crank turning, Sprint visibly faster. Getting off returns the person to where they stood.
+
+**Status: done** (2026-10-05). 18 tests passing (5 new: V2B1-T1..T5), each checked to fail when the behaviour it guards is
+broken. Visual check in the browser: rider on the saddle, hands on the bars, cranks and flywheel turning. Measured in the live
+scene: shoe to pedal about 1.5 cm once settled. That needed a fix first: joints used to ease toward their targets and trailed
+the pedals by about 8 cm. Poses that follow moving machine parts (bike, leg press, chest fly) now track closely. Getting off
+returns the person to where they stood; the treadmill still walks. The optional Android check has not been done.
 
 **Summary:** The bike adds pedalling: feet follow two moving pedals in circles, with speed, distance and time in the popup.
 It reuses the treadmill's popup and the leg press's leg maths.

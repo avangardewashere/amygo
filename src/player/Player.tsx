@@ -27,8 +27,6 @@ const WALK_SPEED = 3 // meters per second
 const TURN_SPEED = 12 // how quickly the person turns to face where they walk
 const STEP_EASE = 8 // how quickly the person steps onto a machine
 
-// How hard the legs work on the treadmill (1 = normal walking stride)
-const MACHINE_GAIT = { walk: 0.8, run: 1.5 } as const
 
 // Walls are at ±width/2 and ±depth/2; stop the body before touching them
 const LIMIT_X = ROOM.width / 2 - BODY_RADIUS
@@ -121,7 +119,7 @@ export function Player() {
       player.position.z = MathUtils.damp(player.position.z, z, STEP_EASE, delta)
       turnToward(player, current.faceYaw, delta)
       // Legs only walk on machines that move under you (the treadmill); seated ones keep still
-      const pace = !EXERCISES[current.kind].speed ? 0 : current.kind === 'run' ? MACHINE_GAIT.run : MACHINE_GAIT.walk
+      const pace = EXERCISES[current.kind].stride ?? 0
       gait.current.amount = MathUtils.damp(gait.current.amount, pace, 4, delta)
     } else {
       if (strength > 0.01) {
