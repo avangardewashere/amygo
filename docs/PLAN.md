@@ -82,6 +82,9 @@ What can't be automated is **how it looks**. Each block also has a short **visua
 
 **Visual check:** the app looks and behaves exactly as before (nothing should change on screen).
 
+**Status: done** (2026-10-05, commit `08c995f`). 13 tests across B0-T1..T6, all passing; each one was checked to fail
+when the behaviour it guards is deliberately broken. Visual check: app unchanged, no console errors.
+
 **Summary:** Block 0 adds automatic tests and a hand-and-foot position calculator, then saves v1 in git. Nothing visible
 changes, but every later machine can now be checked by maths instead of by eye.
 
