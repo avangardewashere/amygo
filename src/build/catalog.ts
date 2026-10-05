@@ -10,6 +10,8 @@ import { CHEST_FLY_DEPTH, CHEST_FLY_WIDTH, ChestFly } from '../equipment/ChestFl
 import { FLY } from '../equipment/chestFlyGeometry'
 import { BIKE_DEPTH, BIKE_WIDTH, Bike } from '../equipment/Bike'
 import { BIKE } from '../equipment/bikeGeometry'
+import { ROWER_DEPTH, ROWER_WIDTH, Rower } from '../equipment/Rower'
+import { ROWER } from '../equipment/rowerGeometry'
 
 // Where the person goes to use a machine they get on (or into), in the
 // machine's own coordinates: z along its length, y the height of the
@@ -87,6 +89,16 @@ export const CATALOG = {
     tagHeight: 1.6,
     // On the saddle
     standAt: placeHips({ y: BIKE.hipY, z: BIKE.hipZ }),
+  },
+  rower: {
+    name: 'Rowing machine',
+    width: ROWER_WIDTH,
+    depth: ROWER_DEPTH,
+    Model: Rower,
+    menuSubtitle: 'Pick an exercise',
+    tagHeight: 1.3,
+    // On the seat, hips at z = 0; the pose slides the body along the rail from there
+    standAt: placeHips({ y: ROWER.hipY, z: 0 }),
   },
 } satisfies Record<string, CatalogEntry>
 

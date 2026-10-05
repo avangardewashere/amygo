@@ -67,10 +67,14 @@ export function Person({ gait, hands = {}, activity = null }: PersonProps) {
 
     // Small bounce: the body rises twice per stride
     body.current!.position.y = Math.abs(Math.sin(phase.current)) * 0.04 * amount
+    // Slide with a moving seat (the rower), or stay put
+    body.current!.position.z = ease(body.current!.position.z, pose?.shift ?? 0)
 
     // Lean back (seat, bench) or stand upright
     const lean = posture.current!
-    lean.rotation.x = ease(lean.rotation.x, pose?.lean ?? 0, POSTURE_EASE)
+    // (On a machine whose lean changes every rep, like the rower, the torso must
+    // keep up too, or the arms reach from where it should be and miss the handle)
+    lean.rotation.x = ease(lean.rotation.x, pose?.lean ?? 0, pose?.follow ? FOLLOW_EASE : POSTURE_EASE)
 
     // ---- Legs ----
     // Feet planted somewhere (sled, floor while seated or lying): bend hips and

@@ -7,6 +7,7 @@ import { catalogEntry, type StandAt } from '../build/catalog'
 import { SEATED_HIP, placeHips } from '../equipment/benchGeometry'
 import { machine } from '../equipment/machineState'
 import { BIKE } from '../equipment/bikeGeometry'
+import { ROWER } from '../equipment/rowerGeometry'
 import { repPhase, repsSince } from './reps'
 
 // Game state that both the 3D scene and the on-screen menus need to see.
@@ -24,6 +25,7 @@ export type ExerciseKind =
   | 'chestFly'
   | 'ride'
   | 'sprint'
+  | 'row'
 
 type Point = { x: number; z: number }
 
@@ -78,6 +80,7 @@ type Exercise = {
   speed?: number // m/s: treadmill belt speed, or how fast you'd be cycling
   stride?: number // treadmill: how hard the legs work (1 = normal walk)
   cadence?: number // bike: pedal turns per second
+  strokes?: boolean // rower: count strokes and show a pace per 500 m
   // Dumbbells in both hands, and how they're held: bar side to side ('across')
   // or pointing ahead ('forward')
   weights?: 'across' | 'forward'
@@ -106,6 +109,7 @@ export const EXERCISES: Record<ExerciseKind, Exercise> = {
   chestFly: { machine: 'chestFly', name: 'Chest fly', doing: 'Doing chest flies' },
   ride: { machine: 'bike', name: 'Easy ride', doing: 'Cycling', speed: 20 / 3.6, cadence: BIKE.cadence.easy },
   sprint: { machine: 'bike', name: 'Sprint', doing: 'Sprinting', speed: 32 / 3.6, cadence: BIKE.cadence.sprint },
+  row: { machine: 'rower', name: 'Row', doing: 'Rowing', speed: ROWER.speed, strokes: true },
 }
 
 // Exercises done with dumbbells in your hands

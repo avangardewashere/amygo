@@ -6,6 +6,7 @@ import { PRESS, pressDistance } from '../equipment/legPressGeometry'
 import { LYING_HIP, SEATED_HIP } from '../equipment/benchGeometry'
 import { FLY, flyAngle } from '../equipment/chestFlyGeometry'
 import { BIKE, crankAngle, footOnPedal } from '../equipment/bikeGeometry'
+import { ROWER, rowerPosition } from '../equipment/rowerGeometry'
 import { ELBOW_DROP, FOOT_DROP, HAND_DROP, HIP_Y, KNEE_DROP, SHOE_Y, SHOULDER_Y } from './proportions'
 
 const FEET_FORWARD = 0.38 // seated: feet planted this far in front of the hips
@@ -34,6 +35,8 @@ export const arm = (pose: Partial<ArmPose>): ArmPose => ({
 //   follow: hands or feet must keep up with a moving machine part (pedals,
 //           a sled, handles), so joints track their targets closely instead
 //           of easing in gently
+//   shift: slide the whole body forward (+) / back (−) from where it was
+//          placed, in meters (the rower's sliding seat)
 // side is +1 for the left, −1 for the right
 type Spot = { z: number; y: number }
 export type BodyPose = {
@@ -41,6 +44,7 @@ export type BodyPose = {
   foot: ((side: number) => Spot) | null
   arms: (side: number) => ArmPose
   follow?: boolean
+  shift?: number
 }
 
 // Sitting upright with both feet flat on the floor in front
@@ -98,8 +102,25 @@ export function exercisePose(activity: Pick<Activity, 'kind'>, t: number, second
     case 'ride':
     case 'sprint':
       return bikePose(activity.kind === 'sprint' ? 'sprint' : 'easy', seconds)
+    case 'row':
+      return rowPose(seconds)
     default:
       return null
+  }
+}
+
+// On the rower: the seat slides (shift), the feet stay strapped to the
+// footplates, and the hands hold the handle. rowerPosition() says where the
+// hips, torso and handle are at this moment of the stroke.
+function rowPose(seconds: number): BodyPose {
+  const { hipZ, lean, shoulder, handle } = rowerPosition(seconds)
+  const grip = reachWithHand(handle.z - shoulder.z, handle.y - shoulder.y)
+  return {
+    lean,
+    follow: true,
+    shift: hipZ, // the person is placed with their hips at z = 0 on the rail
+    foot: () => ({ z: ROWER.foot.z - hipZ, y: ROWER.foot.y - ROWER.hipY }),
+    arms: () => arm({ shoulderX: wrap(grip.upper - lean), elbowX: wrap(grip.lower - grip.upper) }),
   }
 }
 

@@ -33,7 +33,8 @@ const joint = (parent: Object3D, x: number, y: number, z = 0) => {
 // middle of each shoe, in the same coordinates as `origin`.
 export function limbEnds(pose: BodyPose, origin: Origin = {}): LimbEnds {
   const root = new Object3D()
-  root.position.set(origin.x ?? 0, origin.y ?? 0, origin.z ?? 0)
+  // A sliding pose (the rower's seat) moves the whole body along z
+  root.position.set(origin.x ?? 0, origin.y ?? 0, (origin.z ?? 0) + (pose.shift ?? 0))
 
   // Posture pivots at hip height; everything inside leans with it
   const posture = joint(root, 0, HIP_Y)

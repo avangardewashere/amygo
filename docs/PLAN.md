@@ -152,8 +152,16 @@ the chain pays out, and the flywheel spins. The popup shows strokes and distance
 | V2B2-T2 | Feet stay on the footplates while the seat slides |
 | V2B2-T3 | Arm IK never bends an elbow backward (the forearm can't fold the wrong way) |
 | V2B2-T4 | Stroke count goes up once per stroke; distance matches |
+| V2B2-T5 | The stroke goes legs → back → arms on the pull, and the reverse on the slide back (added) |
 
 **Visual check:** the stroke reads as legs → back → arms. The chain stretches from the flywheel to the hands.
+
+**Status: done** (2026-10-05). 23 tests passing (5 new: V2B2-T1..T5), each checked to fail when the behaviour it guards is
+broken. The tests caught one real bug: the pace showed "1:59" instead of "2:00" (rounding). Visual check in the browser: the
+stroke reads legs → back → arms, the seat slides 36 cm, the chain stretches to the handle and the fan spins. Measured in the
+live scene: hands within 0.7 cm of the handle, feet within 0.7 cm of the footplates. That needed a fix first: the torso's lean
+still eased slowly and trailed the stroke, so the hands missed the handle by up to 4.4 cm; poses that follow machine parts
+now make the lean keep up too. The optional Android check has not been done.
 
 **Summary:** The rower teaches the person arm IK, so hands follow a moving handle, plus a body that slides on a seat. Strokes
 and distance show in the popup.
