@@ -323,6 +323,8 @@ The room is getting fuller. Starting spots (all movable in build mode):
 
 ## Backlog (not in any block)
 
+All six items below are now planned as v4 and v5 in [PLAN-v4-v5.md](PLAN-v4-v5.md).
+
 - A more human-looking person: a rigged CC0 model driven by our joint angles (see the earlier research).
 - Remember furniture positions after a reload.
 - Real-phone performance check with all 12 machines.
