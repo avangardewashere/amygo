@@ -180,8 +180,9 @@ describe('Today tab: saving finished sets', () => {
     expect(html.indexOf('Back squat')).toBeLessThan(html.indexOf('Walk')) // newest first
     expect(html).toContain('10 reps · 0:24 · at 14:30')
     expect(html).toContain('0.45 km · 5:00 · at 0:05')
-    expect(html).not.toContain('Bicep curls') // yesterday's
-    expect(html.match(/>Remove</g)).toHaveLength(2)
+    // Yesterday's set isn't in today's list (it's under Earlier, from Block 2)
+    expect(html.split('Earlier')[0]).not.toContain('Bicep curls')
+    expect(html.split('Earlier')[0].match(/>Remove</g)).toHaveLength(2)
     // A day with nothing done yet
     expect(renderToString(createElement(TodayPage, { now: at(8, 9, 0) }))).toContain(EMPTY_TODAY)
   })

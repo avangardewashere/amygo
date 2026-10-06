@@ -66,3 +66,34 @@ export function todaysSets(sets: LoggedSet[], now: number) {
 export function totals(sets: LoggedSet[]) {
   return { count: sets.length, seconds: sets.reduce((sum, set) => sum + set.seconds, 0) }
 }
+
+// One day of the log: its key ("2026-10-07"), its sets newest first, and what they add up to
+export type Day = { key: string; sets: LoggedSet[]; seconds: number }
+
+// The log grouped into days, newest day first. Only days with sets appear.
+export function daysOf(sets: LoggedSet[]): Day[] {
+  const byDay = new Map<string, LoggedSet[]>()
+  for (const set of sets) {
+    const key = dayKey(set.endedAt)
+    const day = byDay.get(key)
+    if (day) day.push(set)
+    else byDay.set(key, [set])
+  }
+  return [...byDay]
+    .map(([key, daySets]) => ({
+      key,
+      sets: daySets.sort((a, b) => b.endedAt - a.endedAt),
+      seconds: totals(daySets).seconds,
+    }))
+    .sort((a, b) => (a.key < b.key ? 1 : -1)) // "2026-10-07" sorts after "2026-10-06" as text too
+}
+
+// How many calendar days `key` is before the day `now` falls on (0 = today).
+// Counted from noon to noon, so a 23- or 25-hour day (clocks changing) still counts as one.
+export function daysAgo(key: string, now: number) {
+  const noon = (dayText: string) => {
+    const [year, month, day] = dayText.split('-').map(Number)
+    return new Date(year, month - 1, day, 12).getTime()
+  }
+  return Math.round((noon(dayKey(now)) - noon(key)) / 86_400_000)
+}

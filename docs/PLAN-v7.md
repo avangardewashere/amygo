@@ -164,7 +164,24 @@ very bottom: **Clear history**, which asks before deleting anything.
 isn't practical), the Earlier list reads right at phone width, a day opens to its sets, and Clear history asks, then
 empties it.
 
-**Summary:** _(written when the block is done)_
+**Status: done** (2026-10-07, on branch `v7-workout-log`). 116 tests passing (6 new: V7B2-T1..T6), each checked to fail
+when the behaviour it guards is broken. Grouping is `daysOf()` and `daysAgo()` in `src/log/sets.ts`; the words are
+`dayLabel()` and `daySummary()` in `src/log/logText.ts`; `clearHistory()` and the `MAX_SETS` cap are in
+`src/log/logStore.ts`. Each earlier day is a native open/close row (`<details>`), so it works by touch, keyboard and screen
+reader with no extra state; the sets inside keep their Remove button. **How the clock-change test works:** the Philippines
+has no clock changes, so T2 switches the test to London time, where 29 March 2026 has 23 hours. Counting days from midnight
+in 24-hour blocks makes T2 fail there, which shows the switch really happens. Days are counted noon to noon instead.
+**Clear history** asks through a function the test can answer itself (yes and cancel are both tested); Reset layout's own
+question was never tested, so this is the first. **Changed on the way:** two Block 1 checks on the Today page (no
+yesterday set, two Remove buttons) now look only at today's part, since yesterday correctly appears under Earlier. Ids,
+storage and the page code stay in the shell: 11.4 → 12.1 KB compressed (budget 60). **Checked in the browser** at phone
+width, with dated sets written into storage: Earlier read "Yesterday · 4 sets · 16 min / Bicep curls 12, 10, 8 · Walk 1.50
+km", "Fri 2 Oct", "30 Sep" and "31 Dec 2025"; Yesterday opened to its four sets, newest first. For Clear history, the
+browser's yes/no box was answered from a page script (a real one would freeze the pane): Cancel kept all 10 sets, yes
+emptied storage and left "No sets yet today". No console errors. The optional Android check has not been done.
+
+**Summary:** Today now lists the earlier days under today's sets, each with its totals and a line of what was done, opening
+to its sets; Clear history asks, then empties the log, and the log never grows past 5,000 sets.
 
 ### Block 3: History by exercise
 

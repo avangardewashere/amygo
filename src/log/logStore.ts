@@ -22,14 +22,29 @@ function update(sets: LoggedSet[]) {
   saveLog(sets)
 }
 
+// The most sets kept (decision D6: years of use, about 500 KB); past it, the oldest go first
+export const MAX_SETS = 5000
+
 export function recordSet(set: NewSet): LoggedSet {
   const saved = { id: newId(set.endedAt), ...set }
-  update([...store.get().sets, saved])
+  let sets = [...store.get().sets, saved]
+  if (sets.length > MAX_SETS) sets = sets.sort((a, b) => a.endedAt - b.endedAt).slice(-MAX_SETS)
+  update(sets)
   return saved
 }
 
 export function removeSet(id: string) {
   update(store.get().sets.filter((set) => set.id !== id))
+}
+
+export const CLEAR_QUESTION = "Delete every saved set? This can't be undone."
+
+// Clear history can't be undone, so it asks first. Returns whether it cleared.
+// (`ask` is the browser's own yes/no box; tests answer it themselves.)
+export function clearHistory(ask: (question: string) => boolean = (question) => window.confirm(question)) {
+  if (!ask(CLEAR_QUESTION)) return false
+  update([])
+  return true
 }
 
 let stopWatching: (() => void) | null = null

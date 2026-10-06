@@ -561,3 +561,57 @@ body,
   opacity: 0.75;
   font-variant-numeric: tabular-nums;
 }
+
+.earlier-title {
+  margin: 24px 0 8px;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.day-list {
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 12px;
+}
+
+.day + .day {
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.day summary {
+  min-height: 56px;
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none; /* the whole row opens it; no browser triangle */
+}
+
+.day summary::-webkit-details-marker {
+  display: none;
+}
+
+.day summary strong {
+  display: block;
+}
+
+.day summary span {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.day[open] summary {
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+}
+
+/* The opened day's sets sit inside the day row, without a second frame */
+.day .set-list {
+  border: 0;
+  border-radius: 0;
+  background: rgb(255 255 255 / 0.03);
+}
+
+.clear-history {
+  display: block;
+  margin: 28px auto 8px;
+  color: rgb(242 240 235 / 0.7);
+}
