@@ -4,8 +4,11 @@
 // exercise starts or stops, read by the machine models every frame. Kept in
 // its own tiny file so models don't import the game state (that would make
 // the imports go round in a circle).
+import type { ExerciseKind } from '../interaction/gymStore'
+
 export const machine = {
   activeId: null as string | null,
+  exercise: null as ExerciseKind | null, // which exercise (the cable machine has two pulleys)
   speed: 0, // treadmill belt speed, m/s
   cadence: 0, // bike pedal turns per second
   startedAt: 0, // when the exercise started (for rep and pedal timing)

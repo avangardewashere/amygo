@@ -261,6 +261,14 @@ This is **one machine with two exercises**, like the dumbbell rack, so it counts
 
 **Visual check:** the cable looks taut and follows the hands, and the stack rises and falls in time.
 
+**Status: done** (2026-10-06, on branch `v3-full-body`). 34 tests passing (4 new: V3B2-T1..T4), each checked to fail when
+the behaviour it guards is broken. The rows use the 3D arm reach from the squat (hands close together on a V-handle, elbows
+drawing back). Visual check in the browser: pushdowns keep the upper arms at the sides while the forearms push the rope down;
+rows reach forward and pull the handle to the stomach with the feet on the footplate; both cables stay taut and the stack
+rises with each pull. Measured in the live scene: rope ends within 0.5 cm of the hands, V-handle within 0.2 cm. Known: while
+the person is still stepping onto a machine (about half a second), handles already sit where the hands will be (true of every
+machine). The optional Android check has not been done.
+
 **Summary:** The cable machine adds stretching cables and a weight stack that follows the pull, with two exercises: standing
 tricep pushdowns and seated cable rows.
 
@@ -312,6 +320,7 @@ The room is getting fuller. Starting spots (all movable in build mode):
 - Real-phone performance check with all 12 machines.
 - Legs slightly overlapping the flat bench's pad when lying down.
 - Switching Walk ↔ Run (and Easy ↔ Sprint) without stopping first.
+- Handles wait in place for the first half second while the person steps onto a machine.
 
 ## Decisions (2026-10-05)
 

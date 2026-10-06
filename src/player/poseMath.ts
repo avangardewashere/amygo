@@ -10,6 +10,7 @@ import { BIKE, crankAngle, footOnPedal } from '../equipment/bikeGeometry'
 import { ROWER, rowerPosition } from '../equipment/rowerGeometry'
 import { ADJ, hipsAgainstBackrest, leanFor } from '../equipment/adjustableBenchGeometry'
 import { BAR_ON_BACK, SQUAT, squatPosition } from '../equipment/squatGeometry'
+import { CABLE, pushdownArm, rowPosition as cableRowPosition } from '../equipment/cableGeometry'
 import { ELBOW_DROP, FOOT_DROP, HAND_DROP, HIP_Y, KNEE_DROP, SHOE_Y, SHOULDER_X, SHOULDER_Y } from './proportions'
 
 const FEET_FORWARD = 0.38 // seated: feet planted this far in front of the hips
@@ -128,6 +129,10 @@ export function exercisePose(activity: Pick<Activity, 'kind'>, t: number, second
       return rowPose(seconds)
     case 'squat':
       return squatPose(t)
+    case 'pushdown':
+      return pushdownPose(t)
+    case 'cableRow':
+      return cableRowPose(t)
     default:
       return null
   }
@@ -152,6 +157,40 @@ function squatPose(t: number): BodyPose {
         y: HIP_Y + BAR_ON_BACK.up - SHOULDER_Y,
         z: BAR_ON_BACK.forward,
       }),
+  }
+}
+
+// Tricep pushdown: standing, leaning slightly into the tower. The upper arms
+// stay pinned at the sides; the hands follow the rope (pushdownArm), so only
+// the forearms turn.
+function pushdownPose(t: number): BodyPose {
+  const { lean } = CABLE.pushdown
+  const { shoulder, hand } = pushdownArm(t)
+  const grip = reachWithHand(hand.z - shoulder.z, hand.y - shoulder.y)
+  return {
+    lean,
+    follow: true,
+    foot: null,
+    arms: () => arm({ shoulderX: wrap(grip.upper - lean), elbowX: wrap(grip.lower - grip.upper) }),
+  }
+}
+
+// Seated cable row: feet on the footplate, both hands on the V-handle, which
+// comes in to the stomach while the torso goes from reaching to sitting tall
+function cableRowPose(t: number): BodyPose {
+  const { hipY, hipZ, foot, gripX } = CABLE.row
+  const { lean, shoulder, handle } = cableRowPosition(t)
+  // The handle measured from the shoulder, turned into the leaning body's own directions
+  const dy = handle.y - shoulder.y
+  const dz = handle.z - shoulder.z
+  const up = dy * Math.cos(lean) + dz * Math.sin(lean)
+  const forward = -dy * Math.sin(lean) + dz * Math.cos(lean)
+  return {
+    lean,
+    follow: true,
+    foot: () => ({ z: foot.z - hipZ, y: foot.y - hipY }),
+    // Elbows drop and draw back past the sides as the handle comes in
+    arms: (side) => armTo3D(side, { x: side * (gripX - SHOULDER_X), y: up, z: forward }, { out: 0.25, back: 0.6 }),
   }
 }
 
@@ -196,17 +235,21 @@ function bikePose(pace: 'easy' | 'sprint', seconds: number): BodyPose {
 // Joint angles that put one hand on a spot anywhere around its shoulder (x out
 // to the side, y up, z forward; relative to the shoulder, in the body's own
 // coordinates). The elbow is free to sit anywhere on a circle, so it's
-// pointed as far down as it can go (and, by `out`, out to the side), the
-// way you'd hold a bar on your back.
-export function armTo3D(side: number, hand: { x: number; y: number; z: number }, out = 0.5): ArmPose {
+// pointed as far down as it can go (and, by `hint.out`, out to the side, and
+// by `hint.back`, back), the way you'd hold a bar on your back.
+export function armTo3D(
+  side: number,
+  hand: { x: number; y: number; z: number },
+  hint = { out: 0.5, back: 0 },
+): ArmPose {
   const target = new Vector3(hand.x, hand.y, hand.z)
   const distance = Math.min(target.length(), ELBOW_DROP + HAND_DROP - 0.001)
   const toHand = target.clone().normalize()
   // The elbow circle: its middle sits `along` the line to the hand, `radius` out from it
   const along = (distance ** 2 + ELBOW_DROP ** 2 - HAND_DROP ** 2) / (2 * distance)
   const radius = Math.sqrt(Math.max(ELBOW_DROP ** 2 - along ** 2, 0))
-  const hint = new Vector3(side * out, -1, 0)
-  const sideways = hint.sub(toHand.clone().multiplyScalar(hint.dot(toHand))).normalize()
+  const toward = new Vector3(side * hint.out, -1, -hint.back)
+  const sideways = toward.sub(toHand.clone().multiplyScalar(toward.dot(toHand))).normalize()
   const elbow = toHand.clone().multiplyScalar(along).add(sideways.multiplyScalar(radius))
   const upper = elbow.clone().normalize()
   const fore = toHand.clone().multiplyScalar(distance).sub(elbow).normalize()

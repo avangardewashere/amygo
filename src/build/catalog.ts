@@ -15,6 +15,7 @@ import { ROWER } from '../equipment/rowerGeometry'
 import { ADJ_BENCH_DEPTH, ADJ_BENCH_WIDTH, AdjustableBench } from '../equipment/AdjustableBench'
 import { SQUAT_RACK_DEPTH, SQUAT_RACK_WIDTH, SquatRack } from '../equipment/SquatRack'
 import { SQUAT } from '../equipment/squatGeometry'
+import { CABLE_DEPTH, CABLE_WIDTH, CableMachine } from '../equipment/CableMachine'
 
 // Where the person goes to use a machine they get on (or into), in the
 // machine's own coordinates: z along its length, y the height of the
@@ -121,6 +122,15 @@ export const CATALOG = {
     tagHeight: 2.4,
     // Standing on the floor a step back from the hooks, facing the rack
     standAt: { z: SQUAT.standZ, y: 0 },
+  },
+  cableMachine: {
+    name: 'Cable machine',
+    width: CABLE_WIDTH,
+    depth: CABLE_DEPTH,
+    Model: CableMachine,
+    menuSubtitle: 'Pick an exercise',
+    tagHeight: 2.6,
+    // No standAt here: pushdowns stand at the tower, rows sit on the seat
   },
 } satisfies Record<string, CatalogEntry>
 

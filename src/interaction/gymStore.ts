@@ -9,6 +9,7 @@ import { machine } from '../equipment/machineState'
 import { BIKE } from '../equipment/bikeGeometry'
 import { ROWER } from '../equipment/rowerGeometry'
 import { ADJ, hipsAgainstBackrest } from '../equipment/adjustableBenchGeometry'
+import { CABLE } from '../equipment/cableGeometry'
 import { repPhase, repsSince } from './reps'
 
 // Game state that both the 3D scene and the on-screen menus need to see.
@@ -30,6 +31,8 @@ export type ExerciseKind =
   | 'inclinePress'
   | 'seatedCurl'
   | 'squat'
+  | 'pushdown'
+  | 'cableRow'
 
 type Point = { x: number; z: number }
 
@@ -132,6 +135,18 @@ export const EXERCISES: Record<ExerciseKind, Exercise> = {
     standAt: placeHips(hipsAgainstBackrest(ADJ.angles.upright)),
   },
   squat: { machine: 'squatRack', name: 'Back squat', doing: 'Doing back squats' },
+  pushdown: {
+    machine: 'cableMachine',
+    name: 'Tricep pushdowns',
+    doing: 'Doing tricep pushdowns',
+    standAt: { z: CABLE.pushdown.standZ, y: 0 }, // standing at the tower
+  },
+  cableRow: {
+    machine: 'cableMachine',
+    name: 'Cable rows',
+    doing: 'Doing cable rows',
+    standAt: placeHips({ y: CABLE.row.hipY, z: CABLE.row.hipZ }), // on the low seat
+  },
 }
 
 // Exercises done with dumbbells in your hands
@@ -177,6 +192,7 @@ function startExercise(kind: ExerciseKind) {
   }
   // Tell the machine it's running, so its moving parts (belt, sled) animate
   machine.activeId = piece.id
+  machine.exercise = kind
   machine.speed = EXERCISES[kind].speed ?? 0
   machine.cadence = EXERCISES[kind].cadence ?? 0
   machine.backrest = EXERCISES[kind].backrest ?? 0
@@ -187,6 +203,7 @@ function startExercise(kind: ExerciseKind) {
 export function stopExercise() {
   if (!store.get().activity) return
   machine.activeId = null
+  machine.exercise = null
   machine.speed = 0
   machine.cadence = 0
   machine.backrest = 0
