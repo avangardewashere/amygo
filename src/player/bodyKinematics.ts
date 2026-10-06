@@ -22,6 +22,7 @@ type Origin = { x?: number; y?: number; z?: number }
 export type LimbEnds = {
   hands: [Vector3, Vector3]
   feet: [Vector3, Vector3]
+  knees: [Vector3, Vector3]
   spine: { hips: Vector3; shoulders: Vector3 }
 }
 
@@ -38,7 +39,8 @@ const joint = (parent: Object3D, x: number, y: number, z = 0) => {
 export function limbEnds(pose: BodyPose, origin: Origin = {}): LimbEnds {
   const root = new Object3D()
   // A sliding pose (the rower's seat) moves the whole body along z
-  root.position.set(origin.x ?? 0, origin.y ?? 0, (origin.z ?? 0) + (pose.shift ?? 0))
+  // (and squatting lowers it)
+  root.position.set(origin.x ?? 0, (origin.y ?? 0) + (pose.rise ?? 0), (origin.z ?? 0) + (pose.shift ?? 0))
 
   // Posture pivots at hip height; everything inside leans with it
   const posture = joint(root, 0, HIP_Y)
@@ -46,12 +48,14 @@ export function limbEnds(pose: BodyPose, origin: Origin = {}): LimbEnds {
   const body = joint(posture, 0, -HIP_Y)
   const neck = joint(body, 0, SHOULDER_Y)
 
+  const kneeJoints: Object3D[] = []
   const feet = [1, -1].map((side) => {
     const legs = pose.foot ? legAngles(pose.foot(side), pose.lean) : { hip: 0, knee: 0 }
     const hip = joint(body, side * HIP_X, HIP_Y)
     hip.rotation.x = legs.hip
     const knee = joint(hip, 0, -KNEE_DROP)
     knee.rotation.x = legs.knee
+    kneeJoints.push(knee)
     return joint(knee, 0, -FOOT_DROP)
   })
 
@@ -69,6 +73,7 @@ export function limbEnds(pose: BodyPose, origin: Origin = {}): LimbEnds {
   return {
     hands: [where(hands[0]), where(hands[1])],
     feet: [where(feet[0]), where(feet[1])],
+    knees: [where(kneeJoints[0]), where(kneeJoints[1])],
     spine: { hips: where(posture), shoulders: where(neck) },
   }
 }

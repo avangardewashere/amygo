@@ -40,6 +40,8 @@ const store = createStore<BuildState>({
     { id: 'bike-1', type: 'bike', x: 5.25, z: -4.9, turns: 2 },
     // Along the left wall, between the leg press and the back corner
     { id: 'rower-1', type: 'rower', x: -9.25, z: -1.5, turns: 0 },
+    // Back wall, between the dumbbell rack and the treadmill; turned so you face the wall to squat
+    { id: 'squatrack-1', type: 'squatRack', x: 0.5, z: -5.4, turns: 2 },
   ],
   selectedId: null,
   drag: null,

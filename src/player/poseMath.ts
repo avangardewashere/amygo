@@ -1,6 +1,7 @@
 // The person's pose maths: what every joint should do for each exercise, and
 // the leg "inverse kinematics". Pure functions with no drawing, so they can be
 // tested (see poseMath.test.ts) and shared by <Person> and bodyKinematics.ts.
+import { Euler, Matrix4, Vector3 } from 'three'
 import type { Activity } from '../interaction/gymStore'
 import { PRESS, pressDistance } from '../equipment/legPressGeometry'
 import { LYING_HIP, SEATED_HIP } from '../equipment/benchGeometry'
@@ -8,7 +9,8 @@ import { FLY, flyAngle } from '../equipment/chestFlyGeometry'
 import { BIKE, crankAngle, footOnPedal } from '../equipment/bikeGeometry'
 import { ROWER, rowerPosition } from '../equipment/rowerGeometry'
 import { ADJ, hipsAgainstBackrest, leanFor } from '../equipment/adjustableBenchGeometry'
-import { ELBOW_DROP, FOOT_DROP, HAND_DROP, HIP_Y, KNEE_DROP, SHOE_Y, SHOULDER_Y } from './proportions'
+import { BAR_ON_BACK, SQUAT, squatPosition } from '../equipment/squatGeometry'
+import { ELBOW_DROP, FOOT_DROP, HAND_DROP, HIP_Y, KNEE_DROP, SHOE_Y, SHOULDER_X, SHOULDER_Y } from './proportions'
 
 const FEET_FORWARD = 0.38 // seated: feet planted this far in front of the hips
 
@@ -37,7 +39,9 @@ export const arm = (pose: Partial<ArmPose>): ArmPose => ({
 //           a sled, handles), so joints track their targets closely instead
 //           of easing in gently
 //   shift: slide the whole body forward (+) / back (−) from where it was
-//          placed, in meters (the rower's sliding seat)
+//          placed, in meters (the rower's sliding seat, hips going back in a squat)
+//   rise: lift (+) / lower (−) the whole body, in meters (squatting down)
+//   flatFeet: keep the shoes flat on the floor however the shins tip
 // side is +1 for the left, −1 for the right
 type Spot = { z: number; y: number }
 export type BodyPose = {
@@ -46,6 +50,8 @@ export type BodyPose = {
   arms: (side: number) => ArmPose
   follow?: boolean
   shift?: number
+  rise?: number
+  flatFeet?: boolean
 }
 
 // Sitting upright with both feet flat on the floor in front
@@ -120,8 +126,32 @@ export function exercisePose(activity: Pick<Activity, 'kind'>, t: number, second
       return bikePose(activity.kind === 'sprint' ? 'sprint' : 'easy', seconds)
     case 'row':
       return rowPose(seconds)
+    case 'squat':
+      return squatPose(t)
     default:
       return null
+  }
+}
+
+// Back squat: the hips drop and go back, the torso tips forward, the feet stay
+// flat where they are. The bar rides on the upper back, so relative to the
+// body it never moves, and neither do the arms holding it.
+function squatPose(t: number): BodyPose {
+  const { rise, shift, lean } = squatPosition(t)
+  return {
+    lean,
+    rise,
+    shift,
+    follow: true,
+    flatFeet: true,
+    // Feet stay where they started: straight under where the hips were
+    foot: () => ({ z: -shift, y: SHOE_Y - (HIP_Y + rise) }),
+    arms: (side) =>
+      armTo3D(side, {
+        x: side * (SQUAT.gripX - SHOULDER_X),
+        y: HIP_Y + BAR_ON_BACK.up - SHOULDER_Y,
+        z: BAR_ON_BACK.forward,
+      }),
   }
 }
 
@@ -159,6 +189,45 @@ function bikePose(pace: 'easy' | 'sprint', seconds: number): BodyPose {
     // Shoulders sit inside the leaning body, so subtract the lean (as for hips)
     arms: () => arm({ shoulderX: wrap(grip.upper - lean), elbowX: wrap(grip.lower - grip.upper) }),
   }
+}
+
+// ---------- Arm maths in 3D ----------
+
+// Joint angles that put one hand on a spot anywhere around its shoulder (x out
+// to the side, y up, z forward; relative to the shoulder, in the body's own
+// coordinates). The elbow is free to sit anywhere on a circle, so it's
+// pointed as far down as it can go (and, by `out`, out to the side), the
+// way you'd hold a bar on your back.
+export function armTo3D(side: number, hand: { x: number; y: number; z: number }, out = 0.5): ArmPose {
+  const target = new Vector3(hand.x, hand.y, hand.z)
+  const distance = Math.min(target.length(), ELBOW_DROP + HAND_DROP - 0.001)
+  const toHand = target.clone().normalize()
+  // The elbow circle: its middle sits `along` the line to the hand, `radius` out from it
+  const along = (distance ** 2 + ELBOW_DROP ** 2 - HAND_DROP ** 2) / (2 * distance)
+  const radius = Math.sqrt(Math.max(ELBOW_DROP ** 2 - along ** 2, 0))
+  const hint = new Vector3(side * out, -1, 0)
+  const sideways = hint.sub(toHand.clone().multiplyScalar(hint.dot(toHand))).normalize()
+  const elbow = toHand.clone().multiplyScalar(along).add(sideways.multiplyScalar(radius))
+  const upper = elbow.clone().normalize()
+  const fore = toHand.clone().multiplyScalar(distance).sub(elbow).normalize()
+
+  // The shoulder's own axes: the arm hangs along its −y, and the elbow (a
+  // hinge about its x) folds the forearm within its y–z plane
+  const y = upper.clone().negate()
+  let x = new Vector3().crossVectors(y, fore).normalize()
+  let z = new Vector3().crossVectors(x, y)
+  // Fold the elbow the natural way (forearm toward the front of the arm)
+  if (fore.dot(z) < 0) {
+    x = x.negate()
+    z = new Vector3().crossVectors(x, y)
+  }
+  const shoulder = new Euler().setFromRotationMatrix(new Matrix4().makeBasis(x, y, z))
+  return arm({
+    shoulderX: shoulder.x,
+    shoulderY: shoulder.y,
+    shoulderZ: shoulder.z,
+    elbowX: Math.atan2(-fore.dot(z), -fore.dot(y)),
+  })
 }
 
 // ---------- Leg maths ----------

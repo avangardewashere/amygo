@@ -29,6 +29,7 @@ export type ExerciseKind =
   | 'row'
   | 'inclinePress'
   | 'seatedCurl'
+  | 'squat'
 
 type Point = { x: number; z: number }
 
@@ -130,6 +131,7 @@ export const EXERCISES: Record<ExerciseKind, Exercise> = {
     backrest: ADJ.angles.upright,
     standAt: placeHips(hipsAgainstBackrest(ADJ.angles.upright)),
   },
+  squat: { machine: 'squatRack', name: 'Back squat', doing: 'Doing back squats' },
 }
 
 // Exercises done with dumbbells in your hands

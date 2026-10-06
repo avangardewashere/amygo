@@ -13,6 +13,8 @@ import { BIKE } from '../equipment/bikeGeometry'
 import { ROWER_DEPTH, ROWER_WIDTH, Rower } from '../equipment/Rower'
 import { ROWER } from '../equipment/rowerGeometry'
 import { ADJ_BENCH_DEPTH, ADJ_BENCH_WIDTH, AdjustableBench } from '../equipment/AdjustableBench'
+import { SQUAT_RACK_DEPTH, SQUAT_RACK_WIDTH, SquatRack } from '../equipment/SquatRack'
+import { SQUAT } from '../equipment/squatGeometry'
 
 // Where the person goes to use a machine they get on (or into), in the
 // machine's own coordinates: z along its length, y the height of the
@@ -109,6 +111,16 @@ export const CATALOG = {
     menuSubtitle: 'Pick an exercise',
     tagHeight: 1.0,
     // No standAt here: each exercise sets the backrest, and where you sit against it
+  },
+  squatRack: {
+    name: 'Squat rack',
+    width: SQUAT_RACK_WIDTH,
+    depth: SQUAT_RACK_DEPTH,
+    Model: SquatRack,
+    menuSubtitle: 'Pick an exercise',
+    tagHeight: 2.4,
+    // Standing on the floor a step back from the hooks, facing the rack
+    standAt: { z: SQUAT.standZ, y: 0 },
   },
 } satisfies Record<string, CatalogEntry>
 

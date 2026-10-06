@@ -225,6 +225,13 @@ feet stay flat. They re-rack the bar when they stop.
 
 **Visual check:** looks like a squat from the side (hips back, chest up), not just a straight drop.
 
+**Status: done** (2026-10-06, on branch `v3-full-body`). 30 tests passing (4 new: V3B1-T1..T4), each checked to fail when
+the behaviour it guards is broken. New for the body: `rise` (the whole body lowers), `flatFeet` (an ankle keeps the shoes
+level while the shins tip) and `armTo3D` (arm reach in 3D, for hands behind and outside the shoulders). Visual check in the
+browser: hips go back, chest tips forward, knees bend, feet stay flat; the bar comes off the hooks, rides on the back, and goes
+back on the hooks on stop. Measured in the live scene: hands within 0.01 cm of the bar, shoes slide at most 0.7 cm and stay
+level within 0.2°, the bar travels from 1.27 m down to 1.01 m. The optional Android check has not been done.
+
 **Summary:** The squat rack teaches the person to lower their whole body with feet planted, carrying a barbell on their back.
 It's the first exercise that moves the person's whole height.
 
