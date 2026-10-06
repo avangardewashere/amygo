@@ -124,7 +124,7 @@ export function Bike({ id }: { id: string }) {
       </group>
 
       {/* Flywheel at the front: a heavy disc with an orange stripe so you can see it spin */}
-      <group ref={flywheel} position={[0, FLYWHEEL.y, FLYWHEEL.z]}>
+      <group ref={flywheel} userData={{ moving: true }} position={[0, FLYWHEEL.y, FLYWHEEL.z]}>
         <mesh rotation-z={Math.PI / 2} castShadow>
           <cylinderGeometry args={[FLYWHEEL.radius, FLYWHEEL.radius, 0.05, 32]} />
           <meshStandardMaterial color={COLORS.flywheel} metalness={0.6} roughness={0.4} />
@@ -140,7 +140,7 @@ export function Bike({ id }: { id: string }) {
       ].map(({ side, crank, pedal }) => {
         const reach = side === 1 ? -BIKE.crankLength : BIKE.crankLength
         return (
-          <group key={side} ref={crank} position={[side * BIKE.crankArmX, BIKE.crankY, BIKE.crankZ]}>
+          <group key={side} ref={crank} userData={{ moving: true }} position={[side * BIKE.crankArmX, BIKE.crankY, BIKE.crankZ]}>
             <Box size={[0.025, BIKE.crankLength, 0.035]} position={[0, reach / 2, 0]} color={COLORS.metal} />
             <group ref={pedal} position={[side * (BIKE.pedalX - BIKE.crankArmX), reach, 0]}>
               <Box size={[0.1, 0.025, 0.12]} position={[0, 0, 0]} color={COLORS.saddle} />

@@ -84,7 +84,7 @@ export function SquatRack({ id }: { id: string }) {
       <Box size={[uprightX * 2 + POST, POST, POST]} position={[0, height - POST / 2, uprightZ]} color={COLORS.frame} />
 
       {/* Barbell: a 2.2 m bar with thicker sleeves, a big plate and a collar each side */}
-      <group ref={barbell} position={[0, hooks.y, hooks.z]}>
+      <group ref={barbell} userData={{ moving: true }} position={[0, hooks.y, hooks.z]}>
         <Round radius={SQUAT.barRadius} length={1.3} x={0} color={COLORS.bar} />
         {[-1, 1].map((side) => (
           <group key={side}>

@@ -198,13 +198,33 @@ draws.
 | ID | Checks |
 | --- | --- |
 | L1B3-T1 | The default layout stays under the draw-call budget (D4) |
-| L1B3-T2 | Two machines of the same kind share one geometry and one material per part, not copies |
-| L1B3-T3 | An idle machine's moving parts don't change between frames; an active one's do |
+| L1B3-T2 | ~~Two machines of the same kind share one geometry and one material per part~~ → Merging keeps every still part (same triangle count before and after, fewer draws, and undo puts it back), for every kind of machine |
+| L1B3-T3 | ~~An idle machine's moving parts don't change between frames~~ → No merged part ever moves: every exercise is run for 4 s on its machine, and any merged part that moved fails the test |
 
 **Visual check:** `?perf` shows the numbers before and after, written into this block's status. Optional Android check:
 open the gym on the phone and note the frames per second.
 
-**Summary:** _(written when the block is done)_
+**Status: done** (2026-10-07, on branch `l1-gym-floor`). 73 tests passing (3 new: L1B3-T1..T3), each checked to fail when
+the thing it guards is broken: merging switched off (T1: 1,295 > 684), one part left out of each merge (T2: the dumbbell
+rack lost 112 triangles), the leg press sled and then the treadmill slats left unmarked (T3 names the merged parts that
+moved). **What changed from the plan, and why:** sharing one geometry and material between copies saves memory, but in
+three.js every mesh is still its own draw, so it would not have moved the number that matters. Instead
+`src/build/mergeStatic.ts` merges each machine's still parts into one shape per material after it appears; the parts that
+move are marked `userData={{ moving: true }}` (16 places, every part a model animates through a ref) and left alone. The
+originals stay in the scene, hidden, so build-mode clicks still reach them; the merged copies ignore clicks. Plan T2 and T3
+were replaced by tests for the two ways merging could go wrong (losing a part; freezing a part that should move). "Freeze
+idle machines" was dropped: it saves a little work per frame but no draws. To count draws in tests, `src/test/renderScene.ts`
+builds the scene in Node with R3F's own `createRoot` and a stand-in renderer (no new package). Per machine, unmerged →
+merged: dumbbell rack 124 → 8, cable 77 → 34, chest fly 64 → 31, leg press 48 → 22, squat rack 46 → 20, rower 36 → 22, bike
+35 → 22, pull-up 34 → 10, adjustable bench 32 → 16, treadmill 32 → 18, bench 24 → 8. What's left is mostly moving parts.
+**D4 budget: 684** furniture draws (526 measured + 30 %). **In the browser (`?perf`): 1,253 → 533 draws** for the whole
+scene, fewer than the 11-piece gym had (576); the gym looks the same, no console errors; in build mode a treadmill was
+dragged out of the cardio row with the real mouse and came out whole. The optional Android check has not been done (it
+belongs to v5 Block 3, which now measures this gym).
+
+**Summary:** The 28-piece gym now costs 533 draws per frame, less than the old 11-piece one, because each machine's still
+parts are merged into a few shapes. A test fails if anything merged ever moves, and a budget test stops the gym from
+quietly getting heavier.
 
 ---
 
@@ -242,7 +262,7 @@ walls) with the orange stripe moved to its top edge, light walls above. The back
 ### Block 2: Painted zone names and a gym name
 
 **What you'll see:** big painted letters on the walls, like real gyms have: **FREE WEIGHTS** above the mirror,
-**CARDIO** above the treadmills, **STRENGTH** on the accent wall, and the **gym's name** (D6) large on the back wall,
+**CARDIO** above the treadmills, **STRENGTH** on the accent wall, and the gym's name, **Amygo** (D6), large on the back wall,
 plus one short painted line (for example "ONE MORE REP") on the left wall.
 
 **How:**
@@ -309,7 +329,7 @@ plus one short painted line (for example "ONE MORE REP") on the left wall.
 | D3 | Lifting platforms and plate trees **follow their squat rack** when it's moved, or stay fixed? | **Follow.** A platform left behind on empty floor looks broken. |
 | D4 | Draw-call budget: set it at **the L1 Block 3 measurement + 30 %** as headroom for L2? | **Yes.** A fixed number now would be a guess; measuring first gives a real one. |
 | D5 | Mirror: **fake** (glossy panel, nearly free) or **real reflection** (draws the gym twice, desktop only)? | **Fake now.** A real one can be a later toggle. |
-| D6 | Gym name painted on the back wall: what should it say? | **GYM 3D** (the default; can be changed in L2 Block 2, it's one line) |
+| D6 | Gym name painted on the back wall: what should it say? | **Amygo** (your pick, 2026-10-07) |
 | D7 | Props: **fixed decoration** or **movable in build mode**? | **Fixed** for now. Making them movable means build mode, saving and the catalog all learn a second kind of item; that's its own block if you want it later. |
 
 ## Not in this plan
