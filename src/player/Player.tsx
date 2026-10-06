@@ -24,6 +24,7 @@ import {
   type Activity,
 } from '../interaction/gymStore'
 import { furnitureObstacles, getBuild } from '../build/buildStore'
+import { propObstacles } from '../props/propLayout'
 import { BODY_RADIUS, blocked, closestInReach } from './reach'
 
 const WALK_SPEED = 3 // meters per second
@@ -133,7 +134,8 @@ export function Player() {
         // Furniture is solid. Try each axis on its own, so walking diagonally into
         // a rack slides you along its side instead of stopping dead. If you are
         // already inside one (it was placed on top of you), you can walk out.
-        const furniture = furnitureObstacles()
+        // Machines and floor props are both solid (props are never something to use, though)
+        const furniture = [...furnitureObstacles(), ...propObstacles()]
         const stuck = blocked(player.position.x, player.position.z, furniture)
         if (stuck || !blocked(nextX, player.position.z, furniture)) player.position.x = nextX
         if (stuck || !blocked(player.position.x, nextZ, furniture)) player.position.z = nextZ

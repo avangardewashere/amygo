@@ -11,6 +11,7 @@ import { Player } from '../player/Player'
 import { FloorDumbbell } from '../equipment/PickableDumbbell'
 import { FurnitureMenu } from '../equipment/FurnitureMenu'
 import { FurnitureLayer } from '../build/Furniture'
+import { Props } from '../props/Props'
 import { BuildController } from '../build/BuildController'
 import { select, useBuild } from '../build/buildStore'
 
@@ -39,6 +40,7 @@ export function GymScene() {
 
       <Room />
       <FurnitureLayer />
+      <Props />
       <BuildController />
       <FloorDumbbell />
       <FurnitureMenu />

@@ -58,7 +58,7 @@ function Box({ size, position, color, rotationX = 0 }: BoxProps) {
 
 function Strand({ strandRef, width, color }: { strandRef: RefObject<Mesh | null>; width: number; color: string }) {
   return (
-    <mesh ref={strandRef} castShadow>
+    <mesh ref={strandRef} userData={{ moving: true }} castShadow>
       <boxGeometry args={[width, 1, width]} />
       <meshStandardMaterial color={color} metalness={0.5} roughness={0.5} />
     </mesh>
@@ -167,7 +167,7 @@ export function CableMachine({ id }: { id: string }) {
       {Array.from({ length: PLATE_COUNT - LIFTED_PLATES }, (_, i) => (
         <Box key={i} size={[0.3, 0.04, 0.16]} position={[0, 0.1 + i * PLATE_GAP, STACK_Z]} color={COLORS.plate} />
       ))}
-      <group ref={lifted}>
+      <group ref={lifted} userData={{ moving: true }}>
         {Array.from({ length: LIFTED_PLATES }, (_, i) => (
           <Box
             key={i}
@@ -196,7 +196,7 @@ export function CableMachine({ id }: { id: string }) {
       <Strand strandRef={lowCable} width={0.008} color={COLORS.cable} />
       <Strand strandRef={leftRope} width={0.022} color={COLORS.rope} />
       <Strand strandRef={rightRope} width={0.022} color={COLORS.rope} />
-      <group ref={handle}>
+      <group ref={handle} userData={{ moving: true }}>
         {/* V-handle: a short grip bar, and a bracket reaching to the cable clip */}
         <mesh rotation-z={Math.PI / 2} castShadow>
           <cylinderGeometry args={[0.018, 0.018, CABLE.row.gripX * 2 + 0.08, 12]} />

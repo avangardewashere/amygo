@@ -90,24 +90,24 @@ export function Rower({ id }: { id: string }) {
         <cylinderGeometry args={[FLYWHEEL.radius, FLYWHEEL.radius, 0.16, 32, 1, true]} />
         <meshStandardMaterial color={COLORS.housing} metalness={0.4} roughness={0.5} side={2} />
       </mesh>
-      <group ref={fan} position={[0, FLYWHEEL.y, FLYWHEEL.z]}>
+      <group ref={fan} userData={{ moving: true }} position={[0, FLYWHEEL.y, FLYWHEEL.z]}>
         {[0, Math.PI / 3, (2 * Math.PI) / 3].map((angle) => (
           <Box key={angle} size={[0.12, 0.03, FLYWHEEL.radius * 1.8]} position={[0, 0, 0]} color={COLORS.accent} rotationX={angle} />
         ))}
       </group>
 
       {/* Sliding seat */}
-      <group ref={seat}>
+      <group ref={seat} userData={{ moving: true }}>
         <Box size={[0.3, 0.06, 0.32]} position={[0, ROWER.hipY - SEAT_TO_HIP - 0.03, 0]} color={COLORS.seat} />
         <Box size={[0.12, ROWER.hipY - 0.11 - RAIL_Y, 0.1]} position={[0, (ROWER.hipY - 0.11 + RAIL_Y) / 2, 0]} color={COLORS.frame} />
       </group>
 
       {/* Chain (stretched between the housing and the handle each frame) and the handle bar */}
-      <mesh ref={chain} castShadow>
+      <mesh ref={chain} userData={{ moving: true }} castShadow>
         <boxGeometry args={[0.015, 0.015, 1]} />
         <meshStandardMaterial color={COLORS.chain} metalness={0.7} roughness={0.4} />
       </mesh>
-      <group ref={handle}>
+      <group ref={handle} userData={{ moving: true }}>
         <mesh rotation-z={Math.PI / 2} castShadow>
           <cylinderGeometry args={[0.02, 0.02, 0.56, 12]} />
           <meshStandardMaterial color={COLORS.seat} roughness={0.8} />

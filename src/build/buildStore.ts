@@ -26,27 +26,52 @@ type BuildState = {
 // Pieces keep this far from the walls (declared up here: the store below uses it as it starts)
 const WALL_GAP = 0.05
 
-// The starting layout (also what Reset layout goes back to)
+// The starting layout (also what Reset layout goes back to), grouped into zones
+// like a real gym (see docs/PLAN-layout.md for the map). Facing: 0 turns faces
+// the front wall (+z), 1 faces left (-x), 2 faces the back wall (-z), 3 faces right (+x).
 export const DEFAULT_ITEMS: Furniture[] = [
-    { id: 'rack-1', type: 'dumbbellRack', x: -3, z: -5.6, turns: 0 },
-    { id: 'treadmill-1', type: 'treadmill', x: 4, z: -4.75, turns: 2 },
-    // Along the left side of the room, facing the front wall
-    { id: 'legpress-1', type: 'legPress', x: -7.5, z: 3, turns: 0 },
-    { id: 'bench-1', type: 'bench', x: 2.5, z: 3.5, turns: 0 },
-    // Beside it, to its left
-    { id: 'adjbench-1', type: 'adjustableBench', x: 1, z: 3.5, turns: 0 },
-    // Back to the right-hand wall, facing into the room (1 quarter turn = facing -x)
-    { id: 'chestfly-1', type: 'chestFly', x: 8.5, z: 1, turns: 1 },
-    // Beside the treadmill, facing the back wall like it does
-    { id: 'bike-1', type: 'bike', x: 5.25, z: -4.9, turns: 2 },
-    // Along the left wall, between the leg press and the back corner
-    { id: 'rower-1', type: 'rower', x: -9.25, z: -1.5, turns: 0 },
-    // Back wall, between the dumbbell rack and the treadmill; turned so you face the wall to squat
-    { id: 'squatrack-1', type: 'squatRack', x: 0.5, z: -5.4, turns: 2 },
-    // Right wall, back corner; turned so you face the tower (and the wall) to use it
-    { id: 'cable-1', type: 'cableMachine', x: 9, z: -4.25, turns: 3 },
-    // Left back corner, tower against the back wall
-    { id: 'pullup-1', type: 'pullupBar', x: -8.5, z: -5.25, turns: 2 },
+  // Pull-up corner: back-left, towers against the back wall
+  { id: 'pullup-1', type: 'pullupBar', x: -8.5, z: -5.25, turns: 2 },
+  { id: 'pullup-2', type: 'pullupBar', x: -6.5, z: -5.25, turns: 2 },
+
+  // Free weights: two dumbbell racks against the back wall (the mirror goes behind
+  // them in L2), then two rows of benches facing them
+  { id: 'rack-1', type: 'dumbbellRack', x: -4.25, z: -5.6, turns: 0 },
+  { id: 'rack-2', type: 'dumbbellRack', x: -2.75, z: -5.6, turns: 0 },
+  { id: 'adjbench-1', type: 'adjustableBench', x: -5, z: -3.75, turns: 2 },
+  { id: 'adjbench-2', type: 'adjustableBench', x: -3.5, z: -3.75, turns: 2 },
+  { id: 'adjbench-3', type: 'adjustableBench', x: -2, z: -3.75, turns: 2 },
+  { id: 'bench-1', type: 'bench', x: -5, z: -1.5, turns: 2 },
+  { id: 'bench-2', type: 'bench', x: -3.5, z: -1.5, turns: 2 },
+  { id: 'bench-3', type: 'bench', x: -2, z: -1.5, turns: 2 },
+
+  // Strength: two squat racks along the back wall; you face the wall to squat
+  { id: 'squatrack-1', type: 'squatRack', x: 0.75, z: -5.4, turns: 2 },
+  { id: 'squatrack-2', type: 'squatRack', x: 3.75, z: -5.4, turns: 2 },
+
+  // Cable corner: back-right, side by side, towers against the back wall
+  { id: 'cable-1', type: 'cableMachine', x: 6.25, z: -5, turns: 2 },
+  { id: 'cable-2', type: 'cableMachine', x: 7.75, z: -5, turns: 2 },
+
+  // Cardio: a row along the right wall, all facing it (the TVs go above them in L2)
+  { id: 'treadmill-1', type: 'treadmill', x: 8.75, z: -2.25, turns: 3 },
+  { id: 'treadmill-2', type: 'treadmill', x: 8.75, z: -1, turns: 3 },
+  { id: 'treadmill-3', type: 'treadmill', x: 8.75, z: 0.25, turns: 3 },
+  { id: 'treadmill-4', type: 'treadmill', x: 8.75, z: 1.5, turns: 3 },
+  { id: 'bike-1', type: 'bike', x: 9.25, z: 2.75, turns: 3 },
+  { id: 'bike-2', type: 'bike', x: 9.25, z: 3.75, turns: 3 },
+  { id: 'bike-3', type: 'bike', x: 9.25, z: 4.75, turns: 3 },
+
+  // Machines: along the left wall, backs to it, facing into the room
+  { id: 'legpress-1', type: 'legPress', x: -9.25, z: -2.25, turns: 0 },
+  { id: 'legpress-2', type: 'legPress', x: -9.25, z: 0.25, turns: 0 },
+  { id: 'chestfly-1', type: 'chestFly', x: -9.25, z: 2.5, turns: 3 },
+  { id: 'chestfly-2', type: 'chestFly', x: -9.25, z: 4, turns: 3 },
+
+  // Rowing: front-left, side by side
+  { id: 'rower-1', type: 'rower', x: -7, z: 4.5, turns: 0 },
+  { id: 'rower-2', type: 'rower', x: -6, z: 4.5, turns: 0 },
+  { id: 'rower-3', type: 'rower', x: -5, z: 4.5, turns: 0 },
 ]
 
 const store = createStore<BuildState>({

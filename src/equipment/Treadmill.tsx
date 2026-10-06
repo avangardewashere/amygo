@@ -66,7 +66,7 @@ export function Treadmill({ id }: { id: string }) {
         <boxGeometry args={[BELT_WIDTH, 0.01, BELT_LENGTH]} />
         <meshStandardMaterial color={COLORS.belt} roughness={0.95} />
       </mesh>
-      <group ref={slats}>
+      <group ref={slats} userData={{ moving: true }}>
         {Array.from({ length: SLAT_COUNT }, (_, i) => (
           <mesh key={i} position-y={DECK_HEIGHT + 0.007}>
             <boxGeometry args={[BELT_WIDTH - 0.02, 0.004, 0.03]} />

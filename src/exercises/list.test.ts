@@ -17,10 +17,12 @@ import {
 
 const kinds = Object.keys(EXERCISES) as ExerciseKind[]
 
-// Start an exercise at its machine, the in-gym way (menu, then step on)
+// Start an exercise at its machine, the in-gym way (menu, then step on). With
+// two of a machine (the layout has two dumbbell racks), the one Start would
+// pick: the nearest
 function startAtMachine(kind: ExerciseKind) {
   stopExercise()
-  const piece = getBuild().items.find((item) => item.type === EXERCISES[kind].machine)!
+  const piece = nearestMachine(EXERCISES[kind].machine, getBuild().items, playerPose)!
   setNearFurniture(piece.id)
   menuActions('furniture', getGym(), piece.type)
     .find((action) => action.label === EXERCISES[kind].name)!

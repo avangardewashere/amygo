@@ -92,7 +92,7 @@ export function ChestFly({ id }: { id: string }) {
         { side: 1, ref: leftLever },
         { side: -1, ref: rightLever },
       ].map(({ side, ref }) => (
-        <group key={side} ref={ref} position={[side * SHOULDER_X, PIVOT_Y, FLY.hipZ]}>
+        <group key={side} ref={ref} userData={{ moving: true }} position={[side * SHOULDER_X, PIVOT_Y, FLY.hipZ]}>
           <mesh rotation-z={Math.PI / 2} castShadow>
             <cylinderGeometry args={[0.035, 0.035, 0.06, 16]} />
             <meshStandardMaterial color={COLORS.metal} metalness={0.8} roughness={0.3} />
@@ -118,7 +118,7 @@ export function ChestFly({ id }: { id: string }) {
       {Array.from({ length: PLATE_COUNT - LIFTED_PLATES }, (_, i) => (
         <Box key={i} size={[0.3, 0.04, 0.16]} position={[0, 0.08 + i * PLATE_GAP, BACK_Z + 0.12]} color={COLORS.plate} />
       ))}
-      <group ref={liftedPlates}>
+      <group ref={liftedPlates} userData={{ moving: true }}>
         {Array.from({ length: LIFTED_PLATES }, (_, i) => (
           <Box
             key={i}

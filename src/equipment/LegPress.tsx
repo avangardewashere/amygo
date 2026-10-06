@@ -109,7 +109,7 @@ export function LegPress({ id }: { id: string }) {
 
       {/* The sled: footplate facing you, carriage behind it, plates on its horns.
           Tilted so its "forward" runs along the rails. */}
-      <group ref={sled} rotation-x={-PRESS.angle}>
+      <group ref={sled} userData={{ moving: true }} rotation-x={-PRESS.angle}>
         <Box size={[0.62, 0.48, 0.035]} position={[0, 0, 0]} color={COLORS.frame} />
         <Box size={[0.58, 0.04, 0.02]} position={[0, -0.2, -0.02]} color={COLORS.accent} />
         <Box size={[0.5, 0.3, 0.12]} position={[0, 0, 0.08]} color={COLORS.frame} />

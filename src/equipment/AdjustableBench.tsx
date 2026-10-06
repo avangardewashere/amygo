@@ -76,7 +76,7 @@ export function AdjustableBench({ id }: { id: string }) {
       </group>
 
       {/* Backrest: pivots at the back edge of the seat. Rotating it lifts the far end. */}
-      <group ref={backrest} position={[0, ADJ.seatTop, ADJ.hingeZ]}>
+      <group ref={backrest} userData={{ moving: true }} position={[0, ADJ.seatTop, ADJ.hingeZ]}>
         <Pad length={ADJ.backLength} z={-ADJ.backLength / 2} />
       </group>
 
@@ -95,7 +95,7 @@ export function AdjustableBench({ id }: { id: string }) {
       <Box size={[0.06, ADJ.seatTop - PAD_THICKNESS - 0.08, 0.06]} position={[0, (ADJ.seatTop - PAD_THICKNESS + 0.04) / 2, -0.45]} color={COLORS.frame} />
 
       {/* Strut (stretched each frame) */}
-      <mesh ref={strut} castShadow>
+      <mesh ref={strut} userData={{ moving: true }} castShadow>
         <boxGeometry args={[0.05, 1, 0.05]} />
         <meshStandardMaterial color={COLORS.frame} metalness={0.3} roughness={0.6} />
       </mesh>

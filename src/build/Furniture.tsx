@@ -1,5 +1,7 @@
-import { Plane, Vector3 } from 'three'
-import { MODELS } from './catalog'
+import { useLayoutEffect, useRef } from 'react'
+import { Plane, Vector3, type Group } from 'three'
+import { MODELS, type FurnitureType } from './catalog'
+import { mergeStaticParts } from './mergeStatic'
 import { footprint, startDrag, useBuild, type Furniture } from './buildStore'
 
 // The floor as an infinite flat surface, for working out where the pointer is on it
@@ -9,13 +11,25 @@ const hit = new Vector3()
 const OK_COLOR = '#4ade80'
 const BLOCKED_COLOR = '#ef4444'
 
+// A piece's 3D model, with its still parts merged once it has appeared (fewer
+// draws; see mergeStatic.ts). Its moving parts keep animating as before.
+export function MergedModel({ type, id }: { type: FurnitureType; id: string }) {
+  const root = useRef<Group>(null)
+  useLayoutEffect(() => mergeStaticParts(root.current!), [type])
+  const Model = MODELS[type]
+  return (
+    <group ref={root}>
+      <Model id={id} />
+    </group>
+  )
+}
+
 function FurniturePiece({ item }: { item: Furniture }) {
   const building = useBuild((s) => s.mode === 'build')
   const selected = useBuild((s) => s.selectedId === item.id)
   // null = not being dragged; true/false = dragged onto a free/taken spot
   const dragValid = useBuild((s) => (s.drag?.id === item.id ? s.drag.valid : null))
 
-  const Model = MODELS[item.type]
   const { w, d } = footprint(item)
 
   return (
@@ -35,7 +49,7 @@ function FurniturePiece({ item }: { item: Furniture }) {
         onPointerOver={building ? () => (document.body.style.cursor = 'grab') : undefined}
         onPointerOut={building ? () => (document.body.style.cursor = '') : undefined}
       >
-        <Model id={item.id} />
+        <MergedModel type={item.type} id={item.id} />
       </group>
 
       {/* Footprint on the floor: green = free spot, red = overlaps something */}
