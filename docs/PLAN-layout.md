@@ -244,7 +244,7 @@ walls) with the orange stripe moved to its top edge, light walls above. The back
   expensive thing we could add. The recommended version is a **fake mirror**: a glossy, slightly blue-grey panel with a
   soft gradient, which reads as a mirror from the dollhouse view at a tiny cost. A real reflection can be turned on for
   desktop only later.
-- Slats are thin boxes **merged into one mesh** (one draw call for the whole slat wall, not one per slat).
+- Slats are ~~thin boxes~~ flat strips (see the status) **merged into one mesh** (one draw call for the whole slat wall, not one per slat).
 
 **Tests:**
 
@@ -253,11 +253,26 @@ walls) with the orange stripe moved to its top edge, light walls above. The back
 | L2B1-T1 | Every wall piece lies within its wall's length and the room's height |
 | L2B1-T2 | The mirror lines up behind the dumbbell racks (covers both racks' width) |
 | L2B1-T3 | Wall pieces on the same wall don't overlap unless they're meant to stack (stripe on top of band) |
-| L2B1-T4 | The draw-call budget from L1B3-T1 still passes |
+| L2B1-T4 | ~~The draw-call budget from L1B3-T1 still passes~~ → The walls have their own draw budget (22), and the whole slat wall is one draw (walls aren't furniture, so the L1 budget could never catch them) |
 
 **Visual check:** the four walls from the default view and one orbit round; the mirror reads as glass.
 
-**Summary:** _(written when the block is done)_
+**Status: done** (2026-10-07, on branch `l2-walls`, from `master` at 02890dd). 77 tests passing (4 new: L2B1-T1..T4), each
+checked to fail when the thing it guards is broken: slats run past the ceiling (T1), the mirror too narrow for `rack-2`
+(T2), the mirror on the same layer as its frame (T3), the slats left unmerged and, separately, every flat piece casting a
+shadow (T4: 27 draws over 22). Wall pieces are data in `src/scene/wallDesign.ts` (which wall, from/to along it,
+bottom/top, layer); `src/scene/Walls.tsx` draws them and `Room.tsx` now only holds the floor, ceiling and `<Walls />`.
+**Changes from the plan:** (1) slats are flat strips facing into the room, not thin boxes. The dollhouse view works because
+each wall shows only its front; a box has faces pointing every way, so the slats would float in mid-air when their wall
+hides. Flat strips hide with the wall. (2) T4 got its own wall budget (see the table). (3) The first mirror (light grey
+fading to mid grey) read as a whiteboard; a gym mirror seen from across the room mostly reflects the dark floor, so the
+glass now fades from cool light grey at the top to near-black at the bottom, with two faint diagonal sheen streaks. Its
+colour fade is stored on the shape's corners (no texture), so it also builds in the Node tests. Checked in the browser: band
+and stripe on all four walls, wood slats behind the squat racks, the mirror reads as glass, no console errors; orbiting
+behind the back wall hides the mirror and slats with it. **Cost:** 542 draws (+9), 17 of them the walls. One flaky moment: with the laptop busy, two scene-building tests (about 1 s each normally) hit Vitest's 5 s limit and failed; those tests now allow 20 s, the rest keep the default.
+
+**Summary:** The walls now look like a gym's: a dark lower band under the orange stripe, a wood-slat accent wall behind the
+squat racks, and a mirror behind the dumbbells, all flat so they still disappear with their wall in the dollhouse view.
 
 ### Block 2: Painted zone names and a gym name
 

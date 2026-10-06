@@ -7,6 +7,9 @@ import { MERGED_NAME, mergeStaticParts } from './mergeStatic'
 import { machine } from '../equipment/machineState'
 import { EXERCISES, type ExerciseKind } from '../interaction/gymStore'
 
+// Building the scene takes ~1 s; give it room when the laptop is busy (it timed out at the 5 s default)
+const SCENE_TIMEOUT = 20_000
+
 // D4: the measured furniture cost after this block, plus 30 % headroom for L2
 export const FURNITURE_DRAW_BUDGET = 684 // 526 measured 2026-10-07 (1,295 before merging)
 
@@ -31,8 +34,7 @@ describe('drawing fewer things', () => {
     const draws = drawCount(scene)
     expect(draws).toBeLessThanOrEqual(FURNITURE_DRAW_BUDGET)
     await unmount()
-  })
-
+  }, SCENE_TIMEOUT)
   it('L1B3-T2: merging keeps every still part: same triangles, fewer draws', async () => {
     for (const type of Object.keys(CATALOG) as FurnitureType[]) {
       const { Model } = CATALOG[type]
@@ -48,8 +50,7 @@ describe('drawing fewer things', () => {
       expect(drawCount(scene), `${type} after undo`).toBe(before)
       await unmount()
     }
-  })
-
+  }, SCENE_TIMEOUT)
   it('L1B3-T3: no merged part ever moves, on any machine, during any exercise', async () => {
     let now = 0
     vi.spyOn(performance, 'now').mockImplementation(() => now)
@@ -80,5 +81,5 @@ describe('drawing fewer things', () => {
       await unmount()
       machine.activeId = null
     }
-  })
+  }, SCENE_TIMEOUT)
 })
