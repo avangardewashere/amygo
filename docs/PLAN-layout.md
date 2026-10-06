@@ -150,14 +150,31 @@ yellow lines mark the walkway in.
 | ID | Checks |
 | --- | --- |
 | L1B2-T1 | Every floor zone lies inside the room |
-| L1B2-T2 | Each squat rack's platform is centred under it and bigger than it on every side, including after it's moved or turned |
+| L1B2-T2 | Each squat rack's platform sticks out past it on every side (trimmed only where a wall stops it), including after it's moved or turned |
 | L1B2-T3 | Fixed zones (turf, cardio tiles) don't overlap each other |
 | L1B2-T4 | Floor zones don't block walking (the reach test from L1B1-T3 still passes with them in) |
+| L1B2-T5 | Every treadmill and bike stands fully on the cardio tiles, and nothing else touches the tiles or the turf (added while building: it's what makes the zones mean something) |
 
 **Visual check:** platforms, turf, tiles, and walkway lines visible from the default view; move a squat rack and its
 platform follows.
 
-**Summary:** _(written when the block is done)_
+**Status: done** (2026-10-07, on branch `l1-gym-floor`). 70 tests passing (5 new: L1B2-T1..T5), each checked to fail when
+the thing it guards is broken: platforms not trimmed at the wall (T1), margins not swapped when a rack is turned a quarter
+(T2), the turf grown into the platforms (T3), a floor zone turned into an obstacle (T4), the cardio tiles cut short of
+`bike-3` (T5). **One change from the plan:** the plan said platforms are "centred under" their rack, but the racks stand
+5 cm from the back wall, so a centred platform would go through it. Instead a platform sticks out past its rack on every
+side (30 cm at the ends of the bar, 60 cm front and back) and is trimmed where a wall stops it. Zones are data in
+`src/scene/floorZones.ts`; `src/scene/Floor.tsx` draws them and replaces the plain floor in `Room.tsx`. The rubber tiles
+are painted in code at load (1 × 1 m, speckles and seams, no image to download). Layers sit 2 and 4 mm up *and* are pulled
+toward the camera when drawn (polygonOffset), so they don't flicker from far away. Turf lines and walkway lines are each
+merged into one shape. A trap avoided: picking the squat racks inside the store selector would build a new list on every
+read and re-render forever (the store warns about this), so the component selects the item list and filters after.
+Checked in the browser: every zone shows, no flicker, no console errors; a squat rack dragged to the front and turned took
+its platform with it, and Reset layout put it back. **Cost:** 1,253 draws (+8 for the whole floor) and 33.0k triangles.
+
+**Summary:** The floor now says what each part of the gym is for: wooden lifting platforms that follow their squat racks, a
+green turf lane, lighter tiles under the cardio row, yellow walkway lines, and rubber tiles everywhere else, for 8 extra
+draws.
 
 ### Block 3: Keep it fast with 28 pieces
 

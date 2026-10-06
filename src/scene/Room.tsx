@@ -1,4 +1,5 @@
 import { ROOM, COLORS } from './dimensions'
+import { Floor } from './Floor'
 
 const { width: W, depth: D, height: H } = ROOM
 const STRIPE_HEIGHT = 0.25
@@ -24,11 +25,8 @@ const walls: Wall[] = [
 export function Room() {
   return (
     <group>
-      {/* Floor: rotated flat, facing up */}
-      <mesh rotation-x={-Math.PI / 2} receiveShadow>
-        <planeGeometry args={[W, D]} />
-        <meshStandardMaterial color={COLORS.floor} roughness={0.95} />
-      </mesh>
+      {/* Floor: rubber tiles, turf, cardio tiles, platforms */}
+      <Floor />
 
       {/* Ceiling: facing down, so it hides when you look from above */}
       <mesh position-y={H} rotation-x={Math.PI / 2}>
