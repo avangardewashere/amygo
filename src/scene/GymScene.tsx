@@ -5,6 +5,7 @@ import { ROOM } from './dimensions'
 import { Lighting } from './Lighting'
 import { QualityControl } from './QualityControl'
 import { QUALITY_LEVELS, perfStore } from './quality'
+import { frameloopFor, useTab } from '../shell/tabStore'
 import { CameraFit } from './CameraFit'
 import { Player } from '../player/Player'
 import { FloorDumbbell } from '../equipment/PickableDumbbell'
@@ -15,11 +16,14 @@ import { select, useBuild } from '../build/buildStore'
 
 export function GymScene() {
   const dragging = useBuild((s) => s.drag !== null)
+  // Draw only while the gym is the page in front (see tabStore.ts)
+  const frameloop = frameloopFor(useTab())
   // Shadows can be switched off on slow devices (see quality.ts)
   const shadows = perfStore.useSelect((s) => QUALITY_LEVELS[s.level].shadowMap > 0)
 
   return (
     <Canvas
+      frameloop={frameloop}
       shadows={shadows}
       // Cap pixel ratio at 2: phones report 3+, which costs a lot of GPU for little gain
       // (and <QualityControl> lowers it further if the gym runs slowly)

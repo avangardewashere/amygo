@@ -96,6 +96,16 @@ play changes: joystick, menus, build mode, all as today.
 **Visual check:** start curls, go to Exercises, wait, come back: the person is still curling and the count went up. On the
 phone (optional) the tab switch is instant both ways.
 
+**Status: done** (2026-10-07, on branch `v6-app-shell`, built in a separate folder `gym3d-v6` (a git worktree) because
+another session had unsaved work in `gym3d`). 66 tests passing (6 new: V6B1-T1..T6), each checked to fail when the
+behaviour it guards is broken. The tab state is `src/shell/tabStore.ts` (no imports, so the gym's input code can check it);
+switching is `openTab()` in `src/shell/tabs.ts`. **Two bugs found in the browser and fixed:** the header showed "-10 reps
+done" (its clock reading was older than the exercise's start; counts now never go below the start, V6B1-T6 added), and the
+gym's floating popup showed through the Exercises page (pages now stack above the gym's popups). Measured in the browser: on
+Exercises the gym's render loop is `never`, its clock didn't move in 10 s, the canvas kept its size (900 × 516); the
+header's count went 5 → 9 reps meanwhile, and back on Home it was the same exercise with header and popup agreeing (17
+reps). Checked at phone size too. The optional Android check has not been done.
+
 **Summary:** The gym now sits inside an app with a header and footer tabs, and keeps running while you're on another tab.
 
 ### Block 2: Exercises tab

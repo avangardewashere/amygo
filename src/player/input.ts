@@ -1,3 +1,5 @@
+import { onHome } from '../shell/tabStore'
+
 // Shared movement input. Keyboard and the on-screen joystick both write here,
 // and the player reads it every frame. It's a plain object (not React state)
 // because it changes many times a second and nothing needs to re-render.
@@ -48,6 +50,7 @@ export function listenToKeyboard() {
 
   const onDown = (e: KeyboardEvent) => {
     if (!(e.code in KEYS)) return
+    if (!onHome()) return // the gym isn't in front: don't walk (key-ups still count, below)
     e.preventDefault() // stop arrow keys from scrolling the page
     held.add(e.code)
     update()

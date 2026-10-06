@@ -23,7 +23,10 @@ export function headline(activity: Pick<Activity, 'kind'>) {
 }
 
 // Bottom line: distance and time when there's a speed, otherwise the rep count
-export function progressText(activity: Pick<Activity, 'kind' | 'startedAt' | 'pace'>, now: number) {
+export function progressText(activity: Pick<Activity, 'kind' | 'startedAt' | 'pace'>, nowRead: number) {
+  // A clock read before the exercise began (a display that last updated earlier,
+  // or a clock restarted on stepping onto a machine) counts as the very start
+  const now = Math.max(nowRead, activity.startedAt)
   const { speed, strokes } = EXERCISES[activity.kind]
   if (speed) {
     // Distance = speed × time, added up across pace changes; the clock times the whole session

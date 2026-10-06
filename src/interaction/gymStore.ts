@@ -12,6 +12,7 @@ import { ADJ, hipsAgainstBackrest } from '../equipment/adjustableBenchGeometry'
 import { CABLE } from '../equipment/cableGeometry'
 import { PULLUP } from '../equipment/pullupGeometry'
 import { repPhase, repsSince } from './reps'
+import { onHome } from '../shell/tabStore'
 
 // Game state that both the 3D scene and the on-screen menus need to see.
 
@@ -416,6 +417,7 @@ function nearFurnitureType() {
 export function listenToInteractionKeys() {
   const onDown = (e: KeyboardEvent) => {
     if (e.repeat || getBuild().mode === 'build') return // items can't be used while building
+    if (!onHome()) return // the gym isn't in front
     const state = store.get()
     if (e.code === 'KeyE') {
       toggleMenu()
