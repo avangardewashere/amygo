@@ -376,6 +376,19 @@ floor props, and they never get in the way of using a machine.
 
 ---
 
+## After L2: portrait camera (2026-10-07, branch `portrait-camera`)
+
+L2 Block 2's portrait check found FREE WEIGHTS nearly edge-on and CARDIO's wall hidden. The portrait camera looked in from
+the right end; it now looks in from the front-left corner (`PORTRAIT_DIRECTION` in `src/scene/cameraStart.ts`, split out
+of `CameraFit.tsx` so it can be tested). Seen from a phone (375 × 812), how head-on each word is (1 = straight on, 0 =
+edge-on): AMYGO 0.38 → 0.62, STRENGTH 0.37 → 0.61, FREE WEIGHTS 0.35 → 0.65, CARDIO hidden → 0.67. Only the left wall (the
+motto) now hides in portrait. Landscape is unchanged. The test that the whole room fits the screen turned up a latent
+bug: the fit sized its imaginary ball around the room's middle height, but the camera aims a third of the way up, so the
+ceiling corners stuck out ~15 cm; the old angle hid that, the new one didn't. The ball is now measured from where the
+camera looks. 3 new tests (`cameraStart.test.ts`: words face the camera within 60° on three phone shapes; landscape's back
+wall stays readable; all eight room corners land on screen on phones and a laptop), each checked to fail. Checked in the
+browser at phone size: every zone name, AMYGO and the TVs readable from the starting view.
+
 ## Decisions (decided 2026-10-07, all as recommended)
 
 | # | Question | Decision |
