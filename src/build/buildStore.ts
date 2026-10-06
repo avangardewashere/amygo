@@ -2,6 +2,7 @@ import { MathUtils } from 'three'
 import { createStore } from '../lib/store'
 import { ROOM } from '../scene/dimensions'
 import { CATALOG, type FurnitureType } from './catalog'
+import { applySavedLayout, readSavedLayout, saveLayout } from './layoutStorage'
 
 // Build mode: like the Sims, the game pauses and you arrange furniture.
 
@@ -22,11 +23,11 @@ type BuildState = {
   drag: Drag | null // the piece being dragged right now, and whether its spot is free
 }
 
-const store = createStore<BuildState>({
-  mode: 'play',
-  // Both start against the back wall: the rack facing into the room, the
-  // treadmill turned around (2 quarter turns) so its runner faces the wall
-  items: [
+// Pieces keep this far from the walls (declared up here: the store below uses it as it starts)
+const WALL_GAP = 0.05
+
+// The starting layout (also what Reset layout goes back to)
+export const DEFAULT_ITEMS: Furniture[] = [
     { id: 'rack-1', type: 'dumbbellRack', x: -3, z: -5.6, turns: 0 },
     { id: 'treadmill-1', type: 'treadmill', x: 4, z: -4.75, turns: 2 },
     // Along the left side of the room, facing the front wall
@@ -46,7 +47,13 @@ const store = createStore<BuildState>({
     { id: 'cable-1', type: 'cableMachine', x: 9, z: -4.25, turns: 3 },
     // Left back corner, tower against the back wall
     { id: 'pullup-1', type: 'pullupBar', x: -8.5, z: -5.25, turns: 2 },
-  ],
+]
+
+const store = createStore<BuildState>({
+  mode: 'play',
+  // Where you left everything last time (this browser), or the starting layout.
+  // Pieces are kept inside the room in case it has changed size since.
+  items: applySavedLayout(DEFAULT_ITEMS, readSavedLayout()).map((item) => fitInRoom(item)),
   selectedId: null,
   drag: null,
 })
@@ -55,7 +62,6 @@ export const useBuild = <S>(select: (s: BuildState) => S) => store.useSelect(sel
 export const getBuild = store.get
 
 export const GRID = 0.25 // furniture snaps to a 25 cm grid
-const WALL_GAP = 0.05
 
 const snap = (value: number) => Math.round(value / GRID) * GRID
 
@@ -81,6 +87,7 @@ function overlapsOthers(item: Furniture) {
 }
 
 // Slide a piece back inside the walls if any part of it pokes through
+// (a function declaration, so the store can use it while it's being created)
 function fitInRoom(item: Furniture): Furniture {
   const { w, d } = footprint(item)
   const limitX = ROOM.width / 2 - w / 2 - WALL_GAP
@@ -130,6 +137,7 @@ export function endDrag() {
   // Dropped on a taken spot: put it back where it started
   const items = drag.valid ? store.get().items : withItem({ ...item, x: grab.startX, z: grab.startZ })
   store.set({ items, drag: null })
+  saveLayout(items)
 }
 
 export function rotateSelected() {
@@ -137,7 +145,16 @@ export function rotateSelected() {
   const item = selectedId && findItem(selectedId)
   if (!item) return
   const next = fitInRoom({ ...item, turns: (item.turns + 1) % 4 })
-  if (!overlapsOthers(next)) store.set({ items: withItem(next) })
+  if (overlapsOthers(next)) return
+  const items = withItem(next)
+  store.set({ items })
+  saveLayout(items)
+}
+
+// Put every piece back where it started (and remember that)
+export function resetLayout() {
+  store.set({ items: DEFAULT_ITEMS, selectedId: null, drag: null })
+  saveLayout(DEFAULT_ITEMS)
 }
 
 // Solid rectangles the person can't walk through (and can stand next to, to use)

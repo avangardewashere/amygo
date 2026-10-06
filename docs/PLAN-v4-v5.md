@@ -37,7 +37,7 @@ Same rules as before:
 | # | Question | Recommendation |
 | --- | --- | --- |
 | D1 | When you switch pace, do the time and distance **carry on** or **start again**? | **Decided 2026-10-06: carry on** (your yes to the plan) |
-| D2 | Saved layout lives in **this browser only** (no accounts, nothing sent anywhere). OK? | Yes, this browser only |
+| D2 | Saved layout lives in **this browser only** (no accounts, nothing sent anywhere). OK? | **Decided 2026-10-06: yes, this browser only** |
 | D3 | For the phone check, open the app via your **Wi-Fi** (dev server on your laptop, phone on the same network) or put it **online** (GitHub repo + free host)? | Wi-Fi first; going online can be its own step later |
 | D4 | The human-looking person needs a **download**: a free CC0 rigged model (the earlier research pointed to Quaternius's models). I'll name the exact file, source and size and ask before downloading. OK to plan on that? | Yes, ask at the start of v5 Block 2 |
 
@@ -181,6 +181,15 @@ That finishes v4.
 | V5B1-T5 | When storage isn't available, moving furniture still works (nothing thrown) |
 
 **Visual check:** move three machines, reload, they're still moved. Reset puts them back.
+
+**Status: done** (2026-10-06, on branch `v5-phone-ready`). 54 tests passing (5 new: V5B1-T1..T5), each checked to fail
+when the behaviour it guards is broken (the first T1 also rotated a piece, and that save covered for a drop that wasn't
+saved; it now reloads after each). Saving lives in `src/build/layoutStorage.ts`: saved data only ever moves pieces the gym
+already has, and only if the entry's id and type match and its numbers are sane; anything else falls back to the starting
+spot. Every storage access is wrapped so a blocked or full storage can't break the gym. One startup crash caught on the way:
+the store now places pieces as it's created, which used a constant declared further down the file; the constant moved up.
+Visual check in the browser: moved the dumbbell rack and turned the bench, reloaded, both stayed; Reset layout asked first,
+put everything back, and stayed reset after another reload. The optional Android check has not been done.
 
 **Summary:** The gym now remembers where you put the furniture, even after a reload, and Reset layout puts it back.
 

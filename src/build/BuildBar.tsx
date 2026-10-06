@@ -1,9 +1,14 @@
 import { CATALOG } from './catalog'
-import { rotateSelected, useBuild } from './buildStore'
+import { resetLayout, rotateSelected, useBuild } from './buildStore'
 import { switchMode } from './actions'
 
 // On-screen controls: the Build/Done toggle, and while building, a bar
-// showing what's selected with a Rotate button.
+// showing what's selected with a Rotate button, and Reset layout.
+
+// Reset can't be undone, so it asks first
+function confirmReset() {
+  if (window.confirm('Put all the furniture back where it started?')) resetLayout()
+}
 export function BuildBar() {
   const building = useBuild((s) => s.mode === 'build')
   const selectedType = useBuild((s) => s.items.find((item) => item.id === s.selectedId)?.type)
@@ -26,6 +31,9 @@ export function BuildBar() {
               <kbd className="key-hint">R</kbd>
             </button>
           )}
+          <button type="button" className="build-bar-button" onClick={confirmReset}>
+            Reset layout
+          </button>
         </div>
       )}
     </>
