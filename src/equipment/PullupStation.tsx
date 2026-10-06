@@ -1,4 +1,6 @@
 import { PULLUP } from './pullupGeometry'
+import { PULLUP_WIDTH, PULLUP_DEPTH } from './sizes'
+export { PULLUP_WIDTH, PULLUP_DEPTH }
 
 const COLORS = {
   frame: '#2b2d31',
@@ -7,10 +9,6 @@ const COLORS = {
   accent: '#e4572e',
   foot: '#111214',
 }
-
-// Overall size in meters. The catalog uses these for the floor footprint.
-export const PULLUP_WIDTH = 1.4 // along x
-export const PULLUP_DEPTH = 1.4 // along z
 
 const POST = 0.07
 const TOWER_HEIGHT = 2.45

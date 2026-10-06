@@ -1,6 +1,6 @@
 import { Html, Line } from '@react-three/drei'
 import { COLORS } from '../scene/dimensions'
-import { CATALOG } from '../build/catalog'
+import { CATALOG_DATA } from '../build/catalogData'
 import { footprint, useBuild } from '../build/buildStore'
 import { ItemMenu } from '../interaction/ItemMenu'
 import { menuActions, useGym } from '../interaction/gymStore'
@@ -17,7 +17,7 @@ export function FurnitureMenu() {
   // Mid-exercise the bubble over the person has the Stop button; hide this to cut clutter
   if (!item || building || activity) return null
 
-  const info = CATALOG[item.type]
+  const info = CATALOG_DATA[item.type]
   const { w, d } = footprint(item)
   const x = w / 2 + 0.08
   const z = d / 2 + 0.08

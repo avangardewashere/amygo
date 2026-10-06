@@ -5,6 +5,8 @@ import { machine } from './machineState'
 import { repPhase } from '../interaction/reps'
 import { SEAT_TO_HIP, SHOULDER_X } from '../player/proportions'
 import { CABLE, activeCable, cableEnd, pushdownArm, rowPosition, stackLift } from './cableGeometry'
+import { CABLE_WIDTH, CABLE_DEPTH } from './sizes'
+export { CABLE_WIDTH, CABLE_DEPTH }
 
 const COLORS = {
   frame: '#2b2d31',
@@ -15,10 +17,6 @@ const COLORS = {
   cable: '#8a8f98',
   rope: '#202227',
 }
-
-// Overall size in meters. The catalog uses these for the floor footprint.
-export const CABLE_WIDTH = 1.0 // along x
-export const CABLE_DEPTH = 1.8 // along z
 
 const TOWER_Z = 0.75 // the uprights and weight stack
 const TOWER_HEIGHT = 2.35

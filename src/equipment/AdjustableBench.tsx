@@ -2,6 +2,8 @@ import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { MathUtils, type Group, type Mesh } from 'three'
 import { ADJ, backrestFacing, backrestPoint, backrestTarget } from './adjustableBenchGeometry'
+import { ADJ_BENCH_WIDTH, ADJ_BENCH_DEPTH } from './sizes'
+export { ADJ_BENCH_WIDTH, ADJ_BENCH_DEPTH }
 
 const COLORS = {
   frame: '#2b2d31',
@@ -9,10 +11,6 @@ const COLORS = {
   trim: '#e4572e',
   foot: '#111214',
 }
-
-// Overall size in meters. The catalog uses these for the floor footprint.
-export const ADJ_BENCH_WIDTH = 0.6 // along x
-export const ADJ_BENCH_DEPTH = 1.3 // along z
 
 const PAD_THICKNESS = 0.1
 // The same rate the person leans back at (POSTURE_EASE in Person.tsx), so

@@ -1,7 +1,7 @@
-import { MathUtils } from 'three'
+import { clamp } from '../lib/math'
 import { createStore } from '../lib/store'
 import { ROOM } from '../scene/dimensions'
-import { CATALOG, type FurnitureType } from './catalog'
+import { CATALOG_DATA, type FurnitureType } from './catalogData'
 import { applySavedLayout, readSavedLayout, saveLayout } from './layoutStorage'
 
 // Build mode: like the Sims, the game pauses and you arrange furniture.
@@ -72,7 +72,7 @@ const withItem = (next: Furniture) =>
 
 // Width/depth on the floor after rotating: a quarter turn swaps them
 export function footprint(item: Furniture) {
-  const { width, depth } = CATALOG[item.type]
+  const { width, depth } = CATALOG_DATA[item.type]
   return item.turns % 2 === 1 ? { w: depth, d: width } : { w: width, d: depth }
 }
 
@@ -94,8 +94,8 @@ function fitInRoom(item: Furniture): Furniture {
   const limitZ = ROOM.depth / 2 - d / 2 - WALL_GAP
   return {
     ...item,
-    x: MathUtils.clamp(item.x, -limitX, limitX),
-    z: MathUtils.clamp(item.z, -limitZ, limitZ),
+    x: clamp(item.x, -limitX, limitX),
+    z: clamp(item.z, -limitZ, limitZ),
   }
 }
 

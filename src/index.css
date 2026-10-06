@@ -513,3 +513,13 @@ body,
   color: #e4572e;
   font-weight: 700;
 }
+
+/* Shown in the Home area while the 3D gym downloads */
+.gym-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  opacity: 0.6;
+}

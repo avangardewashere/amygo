@@ -4,6 +4,8 @@ import { MathUtils, type Group, type Mesh } from 'three'
 import { machine } from './machineState'
 import { ROWER, rowerPosition } from './rowerGeometry'
 import { SEAT_TO_HIP } from '../player/proportions'
+import { ROWER_WIDTH, ROWER_DEPTH } from './sizes'
+export { ROWER_WIDTH, ROWER_DEPTH }
 
 const COLORS = {
   frame: '#2b2d31',
@@ -14,10 +16,6 @@ const COLORS = {
   accent: '#e4572e',
   chain: '#6b6f78',
 }
-
-// Overall size in meters. The catalog uses these for the floor footprint.
-export const ROWER_WIDTH = 0.6 // along x
-export const ROWER_DEPTH = 2.4 // along z
 
 const RAIL_Y = 0.3
 const RAIL_BACK = -1.15

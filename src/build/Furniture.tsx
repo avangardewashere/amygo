@@ -1,5 +1,5 @@
 import { Plane, Vector3 } from 'three'
-import { CATALOG } from './catalog'
+import { MODELS } from './catalog'
 import { footprint, startDrag, useBuild, type Furniture } from './buildStore'
 
 // The floor as an infinite flat surface, for working out where the pointer is on it
@@ -15,7 +15,7 @@ function FurniturePiece({ item }: { item: Furniture }) {
   // null = not being dragged; true/false = dragged onto a free/taken spot
   const dragValid = useBuild((s) => (s.drag?.id === item.id ? s.drag.valid : null))
 
-  const { Model } = CATALOG[item.type]
+  const Model = MODELS[item.type]
   const { w, d } = footprint(item)
 
   return (

@@ -4,6 +4,8 @@ import { MathUtils, type Group } from 'three'
 import { machine } from './machineState'
 import { FOOT_TO_PLATE, PRESS, alongSled, pressDistance } from './legPressGeometry'
 import { repPhase } from '../interaction/reps'
+import { LEG_PRESS_WIDTH, LEG_PRESS_DEPTH } from './sizes'
+export { LEG_PRESS_WIDTH, LEG_PRESS_DEPTH }
 
 const COLORS = {
   frame: '#2b2d31',
@@ -12,10 +14,6 @@ const COLORS = {
   metal: '#b9bcc2',
   accent: '#e4572e',
 }
-
-// Overall size in meters. The catalog uses these for the floor footprint.
-export const LEG_PRESS_WIDTH = 1.2 // along x
-export const LEG_PRESS_DEPTH = 2.3 // along z
 
 const RAIL_X = 0.36
 const RAIL_DROP = 0.12 // rails run this far below the path of the feet

@@ -2,6 +2,8 @@ import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { MathUtils, type Group } from 'three'
 import { machine } from './machineState'
+import { TREADMILL_WIDTH, TREADMILL_DEPTH, DECK_HEIGHT } from './sizes'
+export { TREADMILL_WIDTH, TREADMILL_DEPTH, DECK_HEIGHT }
 
 const COLORS = {
   frame: '#2b2d31',
@@ -11,12 +13,7 @@ const COLORS = {
   screen: '#38bdf8',
 }
 
-// Overall size in meters. The catalog uses these for the floor footprint.
-export const TREADMILL_WIDTH = 0.9 // along x
-export const TREADMILL_DEPTH = 2.0 // along z
-
 // How high the running surface is: the person stands this far off the floor
-export const DECK_HEIGHT = 0.18
 
 // The belt runs from the back edge to just under the motor hood
 const BELT_WIDTH = 0.56

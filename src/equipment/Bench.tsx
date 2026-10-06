@@ -1,4 +1,6 @@
 import { BENCH } from './benchGeometry'
+import { BENCH_WIDTH, BENCH_DEPTH } from './sizes'
+export { BENCH_WIDTH, BENCH_DEPTH }
 
 const COLORS = {
   frame: '#2b2d31',
@@ -6,10 +8,6 @@ const COLORS = {
   trim: '#e4572e',
   foot: '#111214',
 }
-
-// Overall size in meters. The catalog uses these for the floor footprint.
-export const BENCH_WIDTH = 0.6 // along x (the feet stick out wider than the pad)
-export const BENCH_DEPTH = 1.3 // along z
 
 const PAD_THICKNESS = 0.1
 

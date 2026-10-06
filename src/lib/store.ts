@@ -23,7 +23,8 @@ export function createStore<T extends object>(initial: T) {
     // Pick a single field or an existing object; building a new object/array
     // inside `select` would look "changed" every time and re-render forever.
     useSelect<S>(select: (s: T) => S): S {
-      return useSyncExternalStore(subscribe, () => select(state))
+      // (the same value when rendered outside a browser, e.g. in a test)
+      return useSyncExternalStore(subscribe, () => select(state), () => select(state))
     },
   }
 }

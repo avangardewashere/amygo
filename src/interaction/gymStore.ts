@@ -1,9 +1,8 @@
-import { MathUtils } from 'three'
+import { clamp } from '../lib/math'
 import { createStore } from '../lib/store'
 import { ROOM } from '../scene/dimensions'
 import { getBuild, type Furniture } from '../build/buildStore'
-import type { FurnitureType } from '../build/catalog'
-import { catalogEntry } from '../build/catalog'
+import { catalogEntry, type FurnitureType } from '../build/catalogData'
 import { EXERCISES, type ExerciseKind } from '../exercises/catalog'
 import { nearestMachine } from '../exercises/list'
 import { machine } from '../equipment/machineState'
@@ -315,8 +314,8 @@ function drop() {
     holding: false,
     menu: null,
     dumbbell: {
-      x: MathUtils.clamp(x + Math.sin(yaw) * DROP_DISTANCE, -limitX, limitX),
-      z: MathUtils.clamp(z + Math.cos(yaw) * DROP_DISTANCE, -limitZ, limitZ),
+      x: clamp(x + Math.sin(yaw) * DROP_DISTANCE, -limitX, limitX),
+      z: clamp(z + Math.cos(yaw) * DROP_DISTANCE, -limitZ, limitZ),
       // The model's bar runs along x, which is already sideways to someone facing +z,
       // so turning it by the person's own yaw lays it across their path
       rotationY: yaw,

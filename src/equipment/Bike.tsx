@@ -4,6 +4,8 @@ import { MathUtils, type Group } from 'three'
 import { machine } from './machineState'
 import { BIKE, machineCrank } from './bikeGeometry'
 import { SEAT_TO_HIP } from '../player/proportions'
+import { BIKE_WIDTH, BIKE_DEPTH } from './sizes'
+export { BIKE_WIDTH, BIKE_DEPTH }
 
 const COLORS = {
   frame: '#2b2d31',
@@ -13,10 +15,6 @@ const COLORS = {
   accent: '#e4572e',
   screen: '#38bdf8',
 }
-
-// Overall size in meters. The catalog uses these for the floor footprint.
-export const BIKE_WIDTH = 0.6 // along x
-export const BIKE_DEPTH = 1.3 // along z
 
 const FLYWHEEL = { y: 0.36, z: 0.42, radius: 0.24 }
 const FLYWHEEL_GEARING = 3 // the flywheel spins 3× for every turn of the pedals

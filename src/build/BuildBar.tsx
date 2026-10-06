@@ -1,4 +1,4 @@
-import { CATALOG } from './catalog'
+import { CATALOG_DATA } from './catalogData'
 import { resetLayout, rotateSelected, useBuild } from './buildStore'
 import { switchMode } from './actions'
 
@@ -23,7 +23,7 @@ export function BuildBar() {
       {building && (
         <div className="build-bar" role="toolbar" aria-label="Build tools">
           <span className="build-bar-label">
-            {selectedType ? CATALOG[selectedType].name : 'Drag furniture to move it'}
+            {selectedType ? CATALOG_DATA[selectedType].name : 'Drag furniture to move it'}
           </span>
           {selectedType && (
             <button type="button" className="build-bar-button" onClick={rotateSelected}>

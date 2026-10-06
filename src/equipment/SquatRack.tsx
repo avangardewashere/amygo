@@ -3,6 +3,8 @@ import { useFrame } from '@react-three/fiber'
 import { MathUtils, type Group } from 'three'
 import { machine } from './machineState'
 import { SQUAT, barTarget } from './squatGeometry'
+import { SQUAT_RACK_WIDTH, SQUAT_RACK_DEPTH } from './sizes'
+export { SQUAT_RACK_WIDTH, SQUAT_RACK_DEPTH }
 
 const COLORS = {
   frame: '#2b2d31',
@@ -11,10 +13,6 @@ const COLORS = {
   plate: '#1c1d20',
   foot: '#111214',
 }
-
-// Overall size in meters. The catalog uses these for the floor footprint.
-export const SQUAT_RACK_WIDTH = 2.3 // along x (the barbell is 2.2 m long)
-export const SQUAT_RACK_DEPTH = 1.1 // along z
 
 const POST = 0.07 // the uprights are 7 cm square steel
 // The bar glides between the hooks and the person's back at this rate, then

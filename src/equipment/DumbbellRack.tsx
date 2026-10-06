@@ -1,13 +1,11 @@
 import { DumbbellModel, REST_HEIGHT } from './Dumbbell'
+import { RACK_WIDTH, RACK_DEPTH } from './sizes'
+export { RACK_WIDTH, RACK_DEPTH }
 
 const COLORS = {
   frame: '#2b2d31',
   tray: '#3d4046',
 }
-
-// Overall size in meters. The catalog uses these for the floor footprint.
-export const RACK_WIDTH = 1.3 // along x
-export const RACK_DEPTH = 0.7 // along z
 
 const TRAY_WIDTH = RACK_WIDTH - 0.01
 const TRAY_DEPTH = 0.34

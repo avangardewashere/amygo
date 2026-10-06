@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/check-budget.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
     "phone": "npm run build && vite preview --host",

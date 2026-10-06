@@ -5,6 +5,8 @@ import { machine } from './machineState'
 import { FLY, HANDLE_DROP, HANDLE_FORWARD, LEVER_REACH, PIVOT_Y, flyAngle } from './chestFlyGeometry'
 import { repPhase } from '../interaction/reps'
 import { SEAT_TO_HIP, SHOULDER_X } from '../player/proportions'
+import { CHEST_FLY_WIDTH, CHEST_FLY_DEPTH } from './sizes'
+export { CHEST_FLY_WIDTH, CHEST_FLY_DEPTH }
 
 const COLORS = {
   frame: '#2b2d31',
@@ -13,10 +15,6 @@ const COLORS = {
   plate: '#17181b',
   accent: '#e4572e',
 }
-
-// Overall size in meters. The catalog uses these for the floor footprint.
-export const CHEST_FLY_WIDTH = 1.3 // along x
-export const CHEST_FLY_DEPTH = 1.3 // along z
 
 const FRAME_X = 0.5
 const BACK_Z = FLY.hipZ - 0.62 // the uprights and weight stack stand behind the seat

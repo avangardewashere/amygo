@@ -184,6 +184,31 @@ in the Home area, and the 3D fills in when it's ready. Nothing else changes.
 **Visual check:** with the browser's network throttled to "Slow 3G", the header, footer and Exercises tab show first, the
 gym follows. The total download is no bigger than before the version started.
 
+**Status: done** (2026-10-07, on branch `v6-app-shell`). 75 tests passing (3 new: V6B3-T1..T3; T4 is all the earlier
+ones), each checked to fail when the behaviour it guards is broken. `npm run build` now ends with
+`scripts/check-budget.mjs`. **Measured (compressed):**
+
+| File | Before v6 | Now | When |
+| --- | --- | --- | --- |
+| Everything in one file | 469.6 KB | | |
+| Shell (`index`: header, tabs, list, stores) | | **10.5 KB** | first |
+| React | | 68.3 KB | first |
+| The gym's own 3D code (`GymScene`) | | 14.8 KB | after the shell |
+| three.js with fiber and drei (`three`) | | 380.6 KB | after the shell |
+| **Total** | **469.6 KB** | **474.6 KB** | |
+
+So what's needed before anything shows went from about 470 KB to about 79 KB. The total is about 5 KB (1%) bigger than
+before v6, not "no bigger": that's the header, tabs and list themselves plus a little per-file overhead. **Decision taken
+on the way:** the 60 KB budget (D5) counts the shell's own code; React (68 KB) has its own file, since it alone is over 60 KB
+and the budget was meant to catch our code growing. **To get there:** the catalog was split into plain data
+(`build/catalogData.ts`, sizes in `equipment/sizes.ts`) and the 3D models (`build/catalog.ts`), the stores use a small clamp
+of their own instead of three.js's, the speed readout moved out of the 3D quality controller, and the gym is loaded with
+`lazy()`. **Checked in the browser** on the production build (phone size): the screenshot caught the header, Build button,
+joystick and tabs with "Loading the gym…"; the shell, React and styles were requested at about 104 ms and the gym and
+three.js at about 161 ms, after the shell was running; then the gym appeared, with no console errors. The browser pane here
+can't throttle the network, so the "Slow 3G" part wasn't done as written; the download order shows the same thing. The
+optional Android check has not been done. **This completes v6.**
+
 **Summary:** The app paints its shell first and loads the 3D after, with a build-time budget that keeps the shell small.
 That finishes v6.
 

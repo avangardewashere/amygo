@@ -7,6 +7,18 @@ export default defineConfig({
   plugins: [react()],
   // 3D model files are assets (so a test can load one with ?inline)
   assetsInclude: ['**/*.glb'],
+  build: {
+    rollupOptions: {
+      output: {
+        // Libraries get files of their own, so the app's own code (the entry
+        // file) can be measured by itself, and three.js only arrives with the gym
+        manualChunks(id) {
+          if (/node_modules[\\/](three|@react-three)[\\/]/.test(id)) return 'three'
+          if (/node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'react'
+        },
+      },
+    },
+  },
   test: {
     // The tests check maths (poses, machine positions, build rules), so they
     // run in plain Node: no browser or screen needed
