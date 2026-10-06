@@ -1,6 +1,7 @@
 import { ROOM, COLORS } from './dimensions'
 import { Floor } from './Floor'
 import { Walls } from './Walls'
+import { WallArt } from './WallArt'
 
 const { width: W, depth: D, height: H } = ROOM
 
@@ -26,6 +27,8 @@ export function Room() {
       {/* Walls (each hides when the camera is behind it), with the band,
           stripe, slatted accent wall and mirror on them */}
       <Walls />
+      {/* Painted words: the gym name, zone names, a motto */}
+      <WallArt />
     </group>
   )
 }

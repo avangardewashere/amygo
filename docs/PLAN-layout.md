@@ -291,13 +291,30 @@ plus one short painted line (for example "ONE MORE REP") on the left wall.
 
 | ID | Checks |
 | --- | --- |
-| L2B2-T1 | Every painted text fits within its wall and doesn't overlap the mirror, slats or other text |
+| L2B2-T1 | Every painted text fits within its wall and doesn't overlap the mirror or other text; text on the slat wall sits wholly on it (painting across the slats is intended, half on and half off is not) |
 | L2B2-T2 | Each zone name sits over its zone (CARDIO's x/z range overlaps the cardio pieces' range on that wall) |
 | L2B2-T3 | The texture size for each text is worked out from its length, so long words aren't squashed (aspect ratio test) |
 
 **Visual check:** every word readable from the default view on desktop and in portrait.
 
-**Summary:** _(written when the block is done)_
+**Status: done** (2026-10-07, on branch `l2-walls`). 80 tests passing (3 new: L2B2-T1..T3), each checked to fail when the
+thing it guards is broken: FREE WEIGHTS dropped onto the mirror frame and AMYGO hanging off the slats (T1), CARDIO moved
+past the cardio row (T2), the canvas squashed to 80 % width and the font ignoring the width (T3). The words are data in
+`wallDesign.ts` (`WALL_ART`: text, wall, box, colour, which zone it names; `GYM_NAME = 'AMYGO'`); `paintText.ts` holds the
+fitting maths (a canvas with the box's exact proportions, font sized to the box's height and shrunk only if the word is
+too wide); `WallArt.tsx` paints each word at load in a system font (Impact or the nearest bold sans; no font file). T3
+found a real, tiny flaw first: rounding the canvas width and height separately skewed AMYGO's proportions by 1.3 px, so
+the width is now worked out from the rounded height. **What goes where:** AMYGO big in orange and STRENGTH in cream on the
+slat wall above the squat racks; FREE WEIGHTS in dark paint over the mirror; CARDIO over the cardio row on the right wall;
+ONE MORE REP. in orange on the left wall. **One look change:** orange AMYGO on the original mid-brown slats was weak, and the
+plan called the accent wall "dark", so the wood is now dark walnut (`#6b4e33`). **Visual check, honestly:** on desktop
+every word reads, the right way round, from the default view or one orbit (CARDIO is on the right wall, which the wide
+default view hides, as noted in L1 Block 1). **In portrait** ONE MORE REP., AMYGO and STRENGTH read; FREE WEIGHTS is seen
+nearly edge-on and CARDIO's wall is hidden, because the portrait camera looks along the room. One drag shows them; a
+better portrait camera angle would be its own change. No console errors; 547 draws (+5, one per word).
+
+**Summary:** The gym has its name now: AMYGO in big orange letters on the slat wall, with STRENGTH, FREE WEIGHTS and
+CARDIO painted over their zones and ONE MORE REP. on the left wall, all painted in code with no font to download.
 
 ### Block 3: Props that make it feel used
 
