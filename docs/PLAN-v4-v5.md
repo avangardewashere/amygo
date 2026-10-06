@@ -39,7 +39,7 @@ Same rules as before:
 | D1 | When you switch pace, do the time and distance **carry on** or **start again**? | **Decided 2026-10-06: carry on** (your yes to the plan) |
 | D2 | Saved layout lives in **this browser only** (no accounts, nothing sent anywhere). OK? | **Decided 2026-10-06: yes, this browser only** |
 | D3 | For the phone check, open the app via your **Wi-Fi** (dev server on your laptop, phone on the same network) or put it **online** (GitHub repo + free host)? | Wi-Fi first; going online can be its own step later |
-| D4 | The human-looking person needs a **download**: a free CC0 rigged model (the earlier research pointed to Quaternius's models). I'll name the exact file, source and size and ask before downloading. OK to plan on that? | Yes, ask at the start of v5 Block 2 |
+| D4 | The human-looking person needs a **download**: a free CC0 rigged model (the earlier research pointed to Quaternius's models). I'll name the exact file, source and size and ask before downloading. OK to plan on that? | **Decided 2026-10-06:** "Man" by Quaternius (Poly Pizza, CC0, 493 KB, 1.2k triangles), approved before download |
 
 ---
 
@@ -220,6 +220,22 @@ They move exactly like today's person on every machine, because they're driven b
 | V5B2-T4 | All 38 earlier tests still pass |
 
 **Visual check:** every machine, one by one: hands on handles, feet on pedals and plates, nothing bending the wrong way.
+
+**Status: done** (2026-10-06, on branch `v5-phone-ready`). 57 tests passing (3 new: V5B2-T1..T3; T4 is all the earlier
+ones). **Decision taken on the way:** the model's proportions differ from the capsule body (thighs 31 vs 42 cm, shoulders 18 vs
+28 cm out), and you chose "the body takes the model's shape", so `proportions.ts` now holds the model's measurements and the
+classic capsules size themselves from them. Only three machines needed retuning (leg press reach, squat depth, bike foot
+height above the pedal); the rest compute their fit from the body. **How it works:** the classic person's joints still do
+all the moving, hidden; each frame the model's bones copy their directions (`humanRig.ts`). The model's feet hang off its
+root in the file, so they're placed at the shin ends. On load the model's limbs are fitted to our exact lengths and its
+shoulder and hip joints placed on ours (it's slightly asymmetric). **Measured:** worst gap between the model's hands/feet and
+the joint maths across all 21 exercises: 0.00 cm (it was 2.0 to 2.5 cm until the shoulder joints were placed); live in the
+browser: 0 cm. **Tests that needed fixing:** T1 crashed the setup instead of failing (now checks the file directly), T3 was
+circular after fitting (now measures the model as made). **Seated poses (from v4 Block 3):** a shared `SEAT_TO_HIP` (8 cm)
+for every seat; the 45 cm benches sit a little higher as the knees end up below the hips. Measured sink into the seat: chest
+fly 0.9 cm, flat bench 0.9 cm, adjustable bench about 1.7 cm (where seat meets backrest). Visual check done on every machine
+plus walking. The optional Android check has not been done. **For Block 3:** the build's main file is 1.57 MB (470 KB
+compressed), and Vite warns about its size.
 
 **Summary:** The person now looks human, moved by the same joint maths as before, so every machine still works.
 

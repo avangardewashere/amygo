@@ -12,15 +12,15 @@ export const PRESS = {
   // Direction the sled travels, split into forward (z) and up (y) parts
   dirZ: Math.cos(SLED_ANGLE),
   dirY: Math.sin(SLED_ANGLE),
-  extended: 0.8, // hip → foot distance with legs (almost) straight
-  bent: 0.5, // hip → foot distance at the bottom of the rep
+  extended: 0.74, // hip → foot distance with legs (almost) straight
+  bent: 0.46, // hip → foot distance at the bottom of the rep
 }
 
 // t: 0 = legs extended (start of the rep), 1 = knees bent (bottom)
 export const pressDistance = (t: number) => PRESS.extended - (PRESS.extended - PRESS.bent) * t
 
-// Middle of the shoe to the footplate's surface
-export const FOOT_TO_PLATE = 0.06
+// Foot point (the heel, just above the sole) to the footplate's surface
+export const FOOT_TO_PLATE = 0.03
 
 // A point along the sled's path, `d` meters from the hips, shifted `below`
 // meters underneath it. Returns [y, z].

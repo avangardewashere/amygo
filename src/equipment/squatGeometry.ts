@@ -19,7 +19,7 @@ export const SQUAT = {
   // Hips and torso at the top (standing tall) and at the bottom (thighs about
   // level with the floor, hips back, chest tipped forward but still up)
   top: { hipY: HIP_Y, hipZ: 0, lean: 0.05 },
-  bottom: { hipY: 0.41, hipZ: -0.22, lean: 0.72 },
+  bottom: { hipY: 0.49, hipZ: -0.22, lean: 0.72 },
 }
 
 // The bar rests on the upper back: just above the shoulders, against the back

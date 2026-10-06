@@ -2,7 +2,7 @@
 // person's poses and the tests, so the person's back always lies on the
 // backrest. In the bench's own coordinates: you sit facing +z, and the
 // backrest hinges up from the back edge of the seat.
-import { TORSO_RADIUS } from '../player/proportions'
+import { SEAT_TO_HIP, TORSO_RADIUS } from '../player/proportions'
 import { machine } from './machineState'
 
 export const ADJ = {
@@ -15,8 +15,6 @@ export const ADJ = {
   angles: { incline: Math.PI / 4, upright: (85 * Math.PI) / 180 },
 }
 
-// Sitting on the seat: hips this far above the pad (as on the flat bench)
-const HIP_ABOVE_SEAT = 0.05
 
 // A point on the backrest's padded surface, `along` meters from the hinge
 export const backrestPoint = (angle: number, along: number) => ({
@@ -35,7 +33,9 @@ export const leanFor = (angle: number) => angle - Math.PI / 2
 // to the backrest, one torso-thickness in front of it, with the hips just above the seat
 export function hipsAgainstBackrest(angle: number) {
   const facing = backrestFacing(angle)
-  const y = ADJ.seatTop + HIP_ABOVE_SEAT
+  // A 45 cm seat is high for the person's legs: sit a little higher so the
+  // sloping thighs don't tip the seat of the shorts into the pad (see benchGeometry.ts)
+  const y = ADJ.seatTop + SEAT_TO_HIP + 0.015
   // The backrest point level with the hips, once pushed out by the torso's thickness
   const along = (y - TORSO_RADIUS * facing.y - ADJ.seatTop) / Math.sin(angle)
   const surface = backrestPoint(angle, along)

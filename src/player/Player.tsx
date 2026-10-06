@@ -5,6 +5,7 @@ import { MathUtils, Vector3, type Group, type Object3D } from 'three'
 import { ROOM } from '../scene/dimensions'
 import { Person, type Gait, type Hands } from './Person'
 import { FitnessCharacter, MODEL_URL } from './FitnessCharacter'
+import { HUMAN_URL, HumanPerson } from './HumanPerson'
 import { listenToKeyboard, readMove } from './input'
 import { HandDumbbell, HeldDumbbellMenu } from '../equipment/PickableDumbbell'
 import { ActivityBubble } from '../interaction/ActivityBubble'
@@ -47,12 +48,14 @@ type Controls = { target: Vector3 }
 const STANDING_STILL = { x: 0, y: 0 }
 
 // Which body the player has:
+//   'human': the imported "Man" model, moved by our own person's joints
 //   'fitness': the imported Fitness Character (one solid piece; limbs don't move)
 //   'classic': our own capsule person, with walking and exercise animations
-const LOOK = 'classic' as 'fitness' | 'classic'
-const Body = LOOK === 'fitness' ? FitnessCharacter : Person
-// Only fetch the model file when that look is actually used
+const LOOK = 'human' as 'human' | 'fitness' | 'classic'
+const Body = { human: HumanPerson, fitness: FitnessCharacter, classic: Person }[LOOK]
+// Only fetch a model file when that look is actually used
 if (LOOK === 'fitness') useGLTF.preload(MODEL_URL)
+if (LOOK === 'human') useGLTF.preload(HUMAN_URL)
 
 // Turn smoothly toward an angle, the short way round
 function turnToward(object: Object3D, yaw: number, delta: number) {

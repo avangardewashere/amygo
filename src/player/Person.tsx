@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { MathUtils, type Group } from 'three'
 import { paceSeconds, repProgress, type Activity } from '../interaction/gymStore'
 import { arm, exercisePose, legJoints } from './poseMath'
+import type { Rig } from './humanRig'
 import {
   ELBOW_DROP,
   FOOT_DROP,
@@ -12,8 +13,10 @@ import {
   HIP_X,
   HIP_Y,
   KNEE_DROP,
+  SHOE_Y,
   SHOULDER_X,
   SHOULDER_Y,
+  TORSO_RADIUS,
 } from './proportions'
 
 // How much the person is walking right now, written by <Player> every frame.
@@ -44,13 +47,27 @@ const JOINT_EASE = 14 // how fast joints move toward their target angle
 const FOLLOW_EASE = 60
 const POSTURE_EASE = 8 // how fast the body leans back into a seat or lies down
 
+// Thickness of each capsule, and how long it must be to span its joints
+// (a capsule's length doesn't count its rounded ends, which add one radius each)
+const LIMB = { thigh: 0.075, shin: 0.062, upperArm: 0.052, forearm: 0.046 }
+const span = (drop: number, radius: number) => Math.max(drop - 2 * radius + 0.02, 0.01)
+// The torso runs from just below the hips to just above the shoulders
+const TORSO_BOTTOM = HIP_Y - 0.04
+const TORSO_TOP = SHOULDER_Y + 0.1
+
 // What any body for the player receives (so looks can be swapped, see <Player>)
 export type PersonProps = { gait: RefObject<Gait>; hands?: Hands; activity?: Activity | null }
+
+// Extra options for driving another look with this body's joints (see HumanPerson):
+//   hidden: animate the joints but don't draw the capsules
+//   onPosed: called every frame once the joints are set
+type DriverProps = { hidden?: boolean; onPosed?: (rig: Rig) => void }
 
 // A simple person (~1.8 m tall) made of capsules and spheres. Faces +z.
 // Every limb is wrapped in a group placed at its joint (hip, knee, shoulder,
 // elbow), so rotating the group swings the limb from the joint, not its middle.
-export function Person({ gait, hands = {}, activity = null }: PersonProps) {
+export function Person({ gait, hands = {}, activity = null, hidden = false, onPosed }: PersonProps & DriverProps) {
+  const show = !hidden
   const body = useRef<Group>(null)
   const posture = useRef<Group>(null) // leans the whole body back, pivoting at the hips
   const hips = [useRef<Group>(null), useRef<Group>(null)] // left, right
@@ -121,6 +138,16 @@ export function Person({ gait, hands = {}, activity = null }: PersonProps) {
       elbow.rotation.x = ease(elbow.rotation.x, target.elbowX)
       elbow.rotation.z = ease(elbow.rotation.z, target.elbowZ)
     })
+
+    // Hand the finished joints to whoever is following them (the human model)
+    onPosed?.({
+      posture: posture.current!,
+      hips: hips.map((ref) => ref.current!),
+      knees: knees.map((ref) => ref.current!),
+      ankles: ankles.map((ref) => ref.current!),
+      shoulders: shoulders.map((ref) => ref.current!),
+      elbows: elbows.map((ref) => ref.current!),
+    })
   })
 
   return (
@@ -134,18 +161,19 @@ export function Person({ gait, hands = {}, activity = null }: PersonProps) {
             { x: -HIP_X, i: 1 },
           ].map(({ x, i }) => (
             <group key={x} ref={hips[i]} position={[x, HIP_Y, 0]}>
-              <mesh position-y={-KNEE_DROP / 2} castShadow>
-                <capsuleGeometry args={[0.085, 0.27, 4, 12]} />
+              <mesh visible={show} position-y={-KNEE_DROP / 2} castShadow>
+                <capsuleGeometry args={[LIMB.thigh, span(KNEE_DROP, LIMB.thigh), 4, 12]} />
                 <meshStandardMaterial color={COLORS.skin} />
               </mesh>
               <group ref={knees[i]} position-y={-KNEE_DROP}>
-                <mesh position-y={-FOOT_DROP / 2 + 0.02} castShadow>
-                  <capsuleGeometry args={[0.07, 0.3, 4, 12]} />
+                <mesh visible={show} position-y={-FOOT_DROP / 2} castShadow>
+                  <capsuleGeometry args={[LIMB.shin, span(FOOT_DROP, LIMB.shin), 4, 12]} />
                   <meshStandardMaterial color={COLORS.skin} />
                 </mesh>
                 <group ref={ankles[i]} position-y={-FOOT_DROP}>
-                  <mesh position-z={0.05} castShadow>
-                    <boxGeometry args={[0.12, 0.08, 0.26]} />
+                  {/* The foot point is the heel, just above the sole: the shoe sits on the floor below it */}
+                  <mesh visible={show} position={[0, 0.04 - SHOE_Y, 0.05]} castShadow>
+                    <boxGeometry args={[0.1, 0.08, 0.24]} />
                     <meshStandardMaterial color={COLORS.shoes} />
                   </mesh>
                 </group>
@@ -154,14 +182,14 @@ export function Person({ gait, hands = {}, activity = null }: PersonProps) {
           ))}
 
           {/* Shorts */}
-          <mesh position-y={HIP_Y - 0.05} castShadow>
-            <cylinderGeometry args={[0.2, 0.22, 0.3, 16]} />
+          <mesh visible={show} position-y={HIP_Y - 0.03} castShadow>
+            <cylinderGeometry args={[TORSO_RADIUS + 0.04, TORSO_RADIUS + 0.07, 0.24, 16]} />
             <meshStandardMaterial color={COLORS.shorts} />
           </mesh>
 
           {/* Torso */}
-          <mesh position-y={1.22} castShadow>
-            <capsuleGeometry args={[0.2, 0.36, 4, 16]} />
+          <mesh visible={show} position-y={(TORSO_BOTTOM + TORSO_TOP) / 2} castShadow>
+            <capsuleGeometry args={[TORSO_RADIUS, TORSO_TOP - TORSO_BOTTOM - 2 * TORSO_RADIUS, 4, 16]} />
             <meshStandardMaterial color={COLORS.shirt} />
           </mesh>
 
@@ -171,13 +199,13 @@ export function Person({ gait, hands = {}, activity = null }: PersonProps) {
             { x: -SHOULDER_X, i: 1, held: hands.right },
           ].map(({ x, i, held }) => (
             <group key={x} ref={shoulders[i]} position={[x, SHOULDER_Y, 0]}>
-              <mesh position-y={-ELBOW_DROP / 2} castShadow>
-                <capsuleGeometry args={[0.06, 0.2, 4, 12]} />
+              <mesh visible={show} position-y={-ELBOW_DROP / 2} castShadow>
+                <capsuleGeometry args={[LIMB.upperArm, span(ELBOW_DROP, LIMB.upperArm), 4, 12]} />
                 <meshStandardMaterial color={COLORS.skin} />
               </mesh>
               <group ref={elbows[i]} position-y={-ELBOW_DROP}>
-                <mesh position-y={-HAND_DROP / 2} castShadow>
-                  <capsuleGeometry args={[0.055, 0.19, 4, 12]} />
+                <mesh visible={show} position-y={-HAND_DROP / 2} castShadow>
+                  <capsuleGeometry args={[LIMB.forearm, span(HAND_DROP, LIMB.forearm), 4, 12]} />
                   <meshStandardMaterial color={COLORS.skin} />
                 </mesh>
                 {/* Hand: anything held is placed here and follows every joint above it */}
@@ -188,12 +216,12 @@ export function Person({ gait, hands = {}, activity = null }: PersonProps) {
 
           {/* Head, with eyes so you can tell which way the person is facing */}
           <group position-y={HEAD_Y}>
-            <mesh castShadow>
+            <mesh visible={show} castShadow>
               <sphereGeometry args={[HEAD_RADIUS, 24, 16]} />
               <meshStandardMaterial color={COLORS.skin} />
             </mesh>
             {[0.045, -0.045].map((x) => (
-              <mesh key={x} position={[x, 0.02, 0.12]}>
+              <mesh visible={show} key={x} position={[x, 0.02, 0.12]}>
                 <sphereGeometry args={[0.018, 8, 8]} />
                 <meshStandardMaterial color={COLORS.eyes} />
               </mesh>

@@ -15,6 +15,7 @@ import {
   SHOULDER_X,
   SHOULDER_Y,
 } from './proportions'
+import type { Rig } from './humanRig'
 
 // Where the person's feet-origin stands (they face +z, unrotated)
 type Origin = { x?: number; y?: number; z?: number }
@@ -36,10 +37,10 @@ const joint = (parent: Object3D, x: number, y: number, z = 0) => {
   return child
 }
 
-// The body fully settled into `pose` (joints at their targets, as after the
-// easing in <Person> has caught up). Returns the middle of each hand and the
-// middle of each shoe (and the spine), in the same coordinates as `origin`.
-export function limbEnds(pose: BodyPose, origin: Origin = {}): LimbEnds {
+// The body's joints, fully settled into `pose` (as after the easing in
+// <Person> has caught up), as a chain of objects under `root`. The same joints
+// <Person> has, so the human model can be driven from either (see humanRig.ts).
+export function buildBody(pose: BodyPose, origin: Origin = {}) {
   const root = new Object3D()
   // A sliding pose (the rower's seat) moves the whole body along z
   // (and squatting lowers it)
@@ -52,36 +53,49 @@ export function limbEnds(pose: BodyPose, origin: Origin = {}): LimbEnds {
   const neck = joint(body, 0, SHOULDER_Y)
   const head = joint(body, 0, HEAD_Y)
 
-  const kneeJoints: Object3D[] = []
-  const feet = [1, -1].map((side) => {
+  const hips: Object3D[] = []
+  const knees: Object3D[] = []
+  const ankles: Object3D[] = []
+  for (const side of [1, -1]) {
     const legs = pose.foot ? legJoints(pose.foot(side), pose.lean, side) : { hipX: 0, hipY: 0, hipZ: 0, knee: 0 }
     const hip = joint(body, side * HIP_X, HIP_Y)
     hip.rotation.set(legs.hipX, legs.hipY, legs.hipZ)
     const knee = joint(hip, 0, -KNEE_DROP)
     knee.rotation.x = legs.knee
-    kneeJoints.push(knee)
-    return joint(knee, 0, -FOOT_DROP)
-  })
+    hips.push(hip)
+    knees.push(knee)
+    ankles.push(joint(knee, 0, -FOOT_DROP))
+  }
 
-  const elbowJoints: Object3D[] = []
-  const hands = [1, -1].map((side) => {
+  const shoulders: Object3D[] = []
+  const elbows: Object3D[] = []
+  const hands: Object3D[] = []
+  for (const side of [1, -1]) {
     const angles = pose.arms(side)
     const shoulder = joint(body, side * SHOULDER_X, SHOULDER_Y)
     shoulder.rotation.set(angles.shoulderX, angles.shoulderY, angles.shoulderZ)
     const elbow = joint(shoulder, 0, -ELBOW_DROP)
     elbow.rotation.set(angles.elbowX, 0, angles.elbowZ)
-    elbowJoints.push(elbow)
-    return joint(elbow, 0, -HAND_DROP)
-  })
+    shoulders.push(shoulder)
+    elbows.push(elbow)
+    hands.push(joint(elbow, 0, -HAND_DROP))
+  }
 
   root.updateMatrixWorld(true)
+  const rig: Rig = { posture, hips, knees, ankles, shoulders, elbows }
+  return { root, rig, neck, head, hands }
+}
+
+// Where the hands, feet and so on end up, in the same coordinates as `origin`
+export function limbEnds(pose: BodyPose, origin: Origin = {}): LimbEnds {
+  const { rig, neck, head, hands } = buildBody(pose, origin)
   const where = (point: Object3D) => point.getWorldPosition(new Vector3())
   return {
     hands: [where(hands[0]), where(hands[1])],
-    feet: [where(feet[0]), where(feet[1])],
-    knees: [where(kneeJoints[0]), where(kneeJoints[1])],
-    elbows: [where(elbowJoints[0]), where(elbowJoints[1])],
-    spine: { hips: where(posture), shoulders: where(neck) },
+    feet: [where(rig.ankles[0]), where(rig.ankles[1])],
+    knees: [where(rig.knees[0]), where(rig.knees[1])],
+    elbows: [where(rig.elbows[0]), where(rig.elbows[1])],
+    spine: { hips: where(rig.posture), shoulders: where(neck) },
     head: where(head),
   }
 }

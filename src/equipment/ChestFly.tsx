@@ -4,7 +4,7 @@ import { MathUtils, type Group } from 'three'
 import { machine } from './machineState'
 import { FLY, HANDLE_DROP, HANDLE_FORWARD, LEVER_REACH, PIVOT_Y, flyAngle } from './chestFlyGeometry'
 import { repPhase } from '../interaction/reps'
-import { SHOULDER_X } from '../player/proportions'
+import { SEAT_TO_HIP, SHOULDER_X } from '../player/proportions'
 
 const COLORS = {
   frame: '#2b2d31',
@@ -62,7 +62,7 @@ export function ChestFly({ id }: { id: string }) {
     liftedPlates.current!.position.y = squeeze.current * MAX_LIFT
   })
 
-  const seatTop = FLY.hipY - 0.05
+  const seatTop = FLY.hipY - SEAT_TO_HIP
   return (
     <group>
       {/* Base frame on the floor */}

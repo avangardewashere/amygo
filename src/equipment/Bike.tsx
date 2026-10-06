@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { MathUtils, type Group } from 'three'
 import { machine } from './machineState'
 import { BIKE, machineCrank } from './bikeGeometry'
+import { SEAT_TO_HIP } from '../player/proportions'
 
 const COLORS = {
   frame: '#2b2d31',
@@ -83,7 +84,7 @@ export function Bike({ id }: { id: string }) {
     flywheel.current!.rotation.x = angle.current * FLYWHEEL_GEARING
   })
 
-  const saddleTop = BIKE.hipY - 0.06
+  const saddleTop = BIKE.hipY - SEAT_TO_HIP
   return (
     <group>
       {/* Feet: a bar across the floor at each end, joined by a low frame */}

@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { MathUtils, Vector3, type Group, type Mesh } from 'three'
 import { machine } from './machineState'
 import { repPhase } from '../interaction/reps'
-import { SHOULDER_X } from '../player/proportions'
+import { SEAT_TO_HIP, SHOULDER_X } from '../player/proportions'
 import { CABLE, activeCable, cableEnd, pushdownArm, rowPosition, stackLift } from './cableGeometry'
 
 const COLORS = {
@@ -26,7 +26,7 @@ const STACK_Z = 0.68
 const PLATE_COUNT = 12
 const PLATE_GAP = 0.045
 const LIFTED_PLATES = 5
-const SEAT = { top: CABLE.row.hipY - 0.05, from: -0.9, to: -0.3 }
+const SEAT = { top: CABLE.row.hipY - SEAT_TO_HIP, from: -0.9, to: -0.3 }
 // Where the handles hang when nobody is pulling them
 const ROPE_REST = { y: CABLE.high.y - 0.45, z: CABLE.high.z }
 const HANDLE_REST = { y: CABLE.low.y, z: CABLE.low.z - 0.08 }

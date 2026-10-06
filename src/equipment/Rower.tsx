@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { MathUtils, type Group, type Mesh } from 'three'
 import { machine } from './machineState'
 import { ROWER, rowerPosition } from './rowerGeometry'
+import { SEAT_TO_HIP } from '../player/proportions'
 
 const COLORS = {
   frame: '#2b2d31',
@@ -99,7 +100,7 @@ export function Rower({ id }: { id: string }) {
 
       {/* Sliding seat */}
       <group ref={seat}>
-        <Box size={[0.3, 0.06, 0.32]} position={[0, ROWER.hipY - 0.08, 0]} color={COLORS.seat} />
+        <Box size={[0.3, 0.06, 0.32]} position={[0, ROWER.hipY - SEAT_TO_HIP - 0.03, 0]} color={COLORS.seat} />
         <Box size={[0.12, ROWER.hipY - 0.11 - RAIL_Y, 0.1]} position={[0, (ROWER.hipY - 0.11 + RAIL_Y) / 2, 0]} color={COLORS.frame} />
       </group>
 

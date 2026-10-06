@@ -12,7 +12,7 @@ export const BIKE = {
   crankLength: 0.17, // pedal circle radius
   pedalX: HIP_X, // each pedal, out from the middle: in line with the hips
   crankArmX: 0.065, // each crank arm, just outside the crank housing
-  footAbovePedal: 0.05, // middle of the shoe sits this far above the pedal
+  footAbovePedal: 0.035, // the foot point (heel, just above the sole) sits this far above the pedal
   bar: { y: 1.1, z: 0.38, halfWidth: 0.25 }, // handlebar grips
   // How far the rider leans forward (radians) and pedals (turns per second)
   lean: { easy: 0.35, sprint: 0.55 },

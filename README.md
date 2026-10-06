@@ -25,5 +25,6 @@ npm run dev
 
 ## Credits
 
+- **Man** by Quaternius, from [Poly Pizza](https://poly.pizza/m/HMnuH5geEG). Public domain (CC0). File: `public/models/man.glb`. The player's look: its bones follow our own joint maths (`src/player/humanRig.ts`).
 - **Fitness Character** by iPoly3D, from [Poly Pizza](https://poly.pizza/m/KX8wzUxep8). Public domain (CC0). File: `public/models/fitness-character.glb`.
-  Not used by default: the built-in animated person is the player. To try this model instead, set `LOOK` to `'fitness'` in `src/player/Player.tsx` (its limbs don't move).
+  Not used by default (the player is the Man model above). To try it, set `LOOK` to `'fitness'` in `src/player/Player.tsx` (its limbs don't move); `'classic'` gives the original capsule person.

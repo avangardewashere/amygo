@@ -15,12 +15,17 @@ const SHIN_RADIUS = 0.07
 const lying = placeHips(LYING_HIP)
 const MOMENTS = Array.from({ length: 13 }, (_, i) => i / 12)
 
-// Is a point of a limb this thick touching the inside of the pad?
-const inPad = (p: Vector3, radius: number) =>
-  Math.abs(p.x) < PAD.halfWidth + radius &&
-  p.y < PAD.top + radius &&
-  p.y > PAD.bottom - radius &&
-  Math.abs(p.z) < PAD.halfLength + radius
+// Is a point of a limb this thick touching the pad? True distance from the
+// point to the pad's box (so past the pad's edges and corners it's measured
+// diagonally, as a round limb meets a corner), compared with the limb's thickness.
+const inPad = (p: Vector3, radius: number) => {
+  const nearest = new Vector3(
+    Math.min(Math.max(p.x, -PAD.halfWidth), PAD.halfWidth),
+    Math.min(Math.max(p.y, PAD.bottom), PAD.top),
+    Math.min(Math.max(p.z, -PAD.halfLength), PAD.halfLength),
+  )
+  return p.distanceTo(nearest) < radius
+}
 
 // 11 points along a limb segment, end to end
 const along = (a: Vector3, b: Vector3) => Array.from({ length: 11 }, (_, i) => a.clone().lerp(b, i / 10))
