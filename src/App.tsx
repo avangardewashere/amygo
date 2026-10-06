@@ -3,6 +3,11 @@ import { ROOM } from './scene/dimensions'
 import { Joystick } from './player/Joystick'
 import { BuildBar } from './build/BuildBar'
 import { useBuild } from './build/buildStore'
+import { PerfReadout } from './scene/QualityControl'
+import { perfEnabled } from './scene/quality'
+
+// Add ?perf to the address to see the speed readout
+const SHOW_PERF = perfEnabled(window.location.search)
 
 export default function App() {
   const building = useBuild((s) => s.mode === 'build')
@@ -29,6 +34,7 @@ export default function App() {
       </header>
       {!building && <Joystick />}
       <BuildBar />
+      {SHOW_PERF && <PerfReadout />}
     </main>
   )
 }

@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
+    "phone": "npm run build && vite preview --host",
     "test": "vitest run",
     "test:watch": "vitest"
   },

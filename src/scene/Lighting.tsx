@@ -1,5 +1,8 @@
+import { useEffect, useRef } from 'react'
+import type { DirectionalLight } from 'three'
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js'
 import { ROOM } from './dimensions'
+import { QUALITY_LEVELS, perfStore } from './quality'
 
 // Area lights need some lookup tables loaded once before the first render
 RectAreaLightUniformsLib.init()
@@ -46,6 +49,18 @@ function CeilingPanel({ x, z }: { x: number; z: number }) {
 }
 
 export function Lighting() {
+  // Shadow detail follows the quality level (lowered on slow devices, see quality.ts)
+  const shadowMap = perfStore.useSelect((s) => QUALITY_LEVELS[s.level].shadowMap)
+  const sun = useRef<DirectionalLight>(null)
+  useEffect(() => {
+    const light = sun.current!
+    if (!shadowMap || light.shadow.mapSize.x === shadowMap) return
+    // A new size needs a new shadow map: drop the old one and it's rebuilt
+    light.shadow.mapSize.set(shadowMap, shadowMap)
+    light.shadow.map?.dispose()
+    light.shadow.map = null
+  }, [shadowMap])
+
   return (
     <>
       {/* A little light everywhere, so shadowed corners aren't pitch black */}
@@ -58,10 +73,11 @@ export function Lighting() {
           almost straight above does it instead, so things still have shadows
           under them, like they would under ceiling lights. */}
       <directionalLight
+        ref={sun}
         position={[2, ROOM.height + 10, 1.5]}
         intensity={0.5}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
+        castShadow={shadowMap > 0}
+        shadow-mapSize={[QUALITY_LEVELS[0].shadowMap, QUALITY_LEVELS[0].shadowMap]}
         // The shadow only covers a box around the light; stretch it over the whole room
         shadow-camera-left={-ROOM.width / 2 - 2}
         shadow-camera-right={ROOM.width / 2 + 2}

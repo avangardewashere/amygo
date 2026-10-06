@@ -266,6 +266,15 @@ second) can be turned on by adding `?perf` to the address.
 **Visual check:** on the phone, walk around and use at least three machines. Movement is smooth, and touch controls and menus
 work.
 
+**Status: in progress** (2026-10-07, on branch `v5-phone-ready`). Built and tested on the laptop; **V5B3-T4 (the phone) is
+still to do.** 60 tests passing (3 new: V5B3-T1..T3), each checked to fail when the behaviour it guards is broken. The
+step-down lives in `src/scene/quality.ts` (five levels: High → Softer shadows → No shadows → Less sharp → Lowest); it ignores
+one-off hiccups and a tab coming back from the background. `npm run phone` builds the real app and serves it on the Wi-Fi.
+Checked in the browser: the readout appears with `?perf`, and forcing each level changes the renderer (shadow map 2048 →
+1024 → off, sharpness down to 1×). **First laptop numbers:** 576 draws and 17.9k triangles per frame at High; 331 draws with
+shadows off. So the shadow pass alone is about 245 draws, and the triangle count is small: if the phone is slow, the number
+of separate parts drawn (draws) is the likely cause, not triangles.
+
 **Summary:** The gym is measured and tuned on a real phone, with a speed readout and automatic quality step-down, so it stays
 smooth with all 12 machines. That finishes v5 and the backlog.
 
