@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { exercisePose } from '../player/poseMath'
 import { limbEnds } from '../player/bodyKinematics'
 import { TORSO_RADIUS } from '../player/proportions'
-import { EXERCISES, getGym, menuActions, setNearFurniture, stopExercise } from '../interaction/gymStore'
+import { EXERCISES, getGym, menuActions, setNearFurniture, stepOnto, stopExercise } from '../interaction/gymStore'
 import { ADJ, backrestFacing, backrestTarget } from './adjustableBenchGeometry'
+
+
+// The person steps onto the machine's spot (in the game, <Player> does this every frame)
+const stepOn = () => stepOnto(getGym().activity!.stand!)
 
 const BENCH_EXERCISES = ['inclinePress', 'seatedCurl'] as const
 // Through one rep: arms move, but the back should stay put
@@ -64,10 +68,12 @@ describe('adjustable bench', () => {
 
   it('V2B3-T3: the backrest rises for each exercise, and goes back to flat after you get off', () => {
     setNearFurniture('adjbench-1')
-    const start = (name: string) =>
+    const start = (name: string) => {
       menuActions('furniture', getGym(), 'adjustableBench')
         .find((action) => action.label === name)!
         .run()
+      stepOn()
+    }
 
     start('Incline dumbbell press')
     expect(backrestTarget('adjbench-1')).toBeCloseTo(Math.PI / 4)

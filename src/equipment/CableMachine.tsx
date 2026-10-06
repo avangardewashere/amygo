@@ -31,6 +31,11 @@ const SEAT = { top: CABLE.row.hipY - 0.05, from: -0.9, to: -0.3 }
 const ROPE_REST = { y: CABLE.high.y - 0.45, z: CABLE.high.z }
 const HANDLE_REST = { y: CABLE.low.y, z: CABLE.low.z - 0.08 }
 
+// When an exercise begins, the rope or handle glides from where it hangs into
+// the hands (and back again afterwards) at this rate, then follows the hands exactly
+const GLIDE_EASE = 14
+const GLIDE_SECONDS = 0.4
+
 const UP = new Vector3(0, 1, 0)
 const from = new Vector3()
 const to = new Vector3()
@@ -85,17 +90,31 @@ export function CableMachine({ id }: { id: string }) {
   const rightRope = useRef<Mesh>(null)
   const handle = useRef<Group>(null)
   const lifted = useRef<Group>(null)
+  // Where the rope (its middle, its ends) and the V-handle are right now
+  const rope = useRef({ y: ROPE_REST.y, z: ROPE_REST.z, handY: ROPE_REST.y - 0.3, handZ: ROPE_REST.z, spread: 0.04 })
+  const grip = useRef({ ...HANDLE_REST })
 
   useFrame((_, delta) => {
     const kind = activeCable(id)
     const t = kind ? repPhase(machine.startedAt) : 0
+    // Gliding into the hands at the start (or back to rest after); otherwise exact
+    const gliding = !kind || performance.now() - machine.startedAt < GLIDE_SECONDS * 1000
+    const follow = (from: number, to: number) => (gliding ? MathUtils.damp(from, to, GLIDE_EASE, delta) : to)
 
     // High pulley: the cable runs down to the rope's middle; each rope end is
     // in a hand during pushdowns, or hangs down when nobody holds it
-    const ropeMiddle = kind === 'pushdown' ? cableEnd('pushdown', t) : ROPE_REST
+    const ropeTarget = kind === 'pushdown' ? cableEnd('pushdown', t) : ROPE_REST
+    const handTarget = kind === 'pushdown' ? pushdownArm(t).hand : { y: ROPE_REST.y - 0.3, z: ROPE_REST.z }
+    const r = rope.current
+    r.y = follow(r.y, ropeTarget.y)
+    r.z = follow(r.z, ropeTarget.z)
+    r.handY = follow(r.handY, handTarget.y)
+    r.handZ = follow(r.handZ, handTarget.z)
+    r.spread = follow(r.spread, kind === 'pushdown' ? SHOULDER_X : 0.04)
+    const ropeMiddle = r
     stretch(highCable.current!, from.set(0, CABLE.high.y, CABLE.high.z), to.set(0, ropeMiddle.y, ropeMiddle.z))
-    const hand = kind === 'pushdown' ? pushdownArm(t).hand : { y: ropeMiddle.y - 0.3, z: ropeMiddle.z }
-    const spread = kind === 'pushdown' ? SHOULDER_X : 0.04
+    const hand = { y: r.handY, z: r.handZ }
+    const spread = r.spread
     ;[
       { side: 1, rope: leftRope },
       { side: -1, rope: rightRope },
@@ -104,9 +123,12 @@ export function CableMachine({ id }: { id: string }) {
     })
 
     // Low pulley: the cable runs to the V-handle
-    const grip = kind === 'cableRow' ? rowPosition(t).handle : HANDLE_REST
-    handle.current!.position.set(0, grip.y, grip.z)
-    stretch(lowCable.current!, from.set(0, CABLE.low.y, CABLE.low.z), to.set(0, grip.y, grip.z + 0.07))
+    const gripTarget = kind === 'cableRow' ? rowPosition(t).handle : HANDLE_REST
+    const g = grip.current
+    g.y = follow(g.y, gripTarget.y)
+    g.z = follow(g.z, gripTarget.z)
+    handle.current!.position.set(0, g.y, g.z)
+    stretch(lowCable.current!, from.set(0, CABLE.low.y, CABLE.low.z), to.set(0, g.y, g.z + 0.07))
 
     // The stack rises by exactly as much cable as has been pulled out; after a
     // set it settles back down

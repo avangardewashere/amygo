@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { exercisePose, legAngles } from '../player/poseMath'
 import { limbEnds } from '../player/bodyKinematics'
 import { HIP_X, SHOE_Y, TORSO_RADIUS } from '../player/proportions'
-import { getGym, menuActions, setNearFurniture, stopExercise } from '../interaction/gymStore'
+import { getGym, menuActions, setNearFurniture, stepOnto, stopExercise } from '../interaction/gymStore'
 import { SQUAT, barTarget, squatPosition } from './squatGeometry'
+
+
+// The person steps onto the machine's spot (in the game, <Player> does this every frame)
+const stepOn = () => stepOnto(getGym().activity!.stand!)
 
 // The squatter stands on the floor a step back from the hooks
 const standing = { z: SQUAT.standZ }
@@ -66,6 +70,7 @@ describe('squat rack', () => {
     menuActions('furniture', getGym(), 'squatRack')
       .find((action) => action.label === 'Back squat')!
       .run()
+    stepOn()
     const onBack = barTarget('squatrack-1')
     expect(Math.hypot(onBack.y - SQUAT.hooks.y, onBack.z - SQUAT.hooks.z)).toBeGreaterThan(0.3)
     stopExercise()

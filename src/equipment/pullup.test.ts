@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { exercisePose } from '../player/poseMath'
 import { limbEnds } from '../player/bodyKinematics'
 import { HEAD_RADIUS, SHOE_Y } from '../player/proportions'
-import { getGym, menuActions, playerPose, setNearFurniture, stepOffSpot, stopExercise } from '../interaction/gymStore'
+import { getGym, menuActions, playerPose, setNearFurniture, stepOffSpot, stepOnto, stopExercise } from '../interaction/gymStore'
 import { PULLUP } from './pullupGeometry'
+
+
+// The person steps onto the machine's spot (in the game, <Player> does this every frame)
+const stepOn = () => stepOnto(getGym().activity!.stand!)
 
 // The person is placed on the floor under the bar; the pose lifts them
 const underBar = { z: PULLUP.standZ }
@@ -47,6 +51,7 @@ describe('pull-up bar', () => {
     menuActions('furniture', getGym(), 'pullupBar')
       .find((action) => action.label === 'Pull-ups')!
       .run()
+    stepOn()
     const set = getGym().activity
     expect(set?.kind).toBe('pullup')
     expect(set?.stand?.y).toBe(0) // placed on the floor; only the pose lifts the body

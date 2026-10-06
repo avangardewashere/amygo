@@ -65,7 +65,8 @@ export function Person({ gait, hands = {}, activity = null }: PersonProps) {
     const amount = gait.current.amount
     phase.current += delta * STRIDE_SPEED * amount
     const swing = Math.sin(phase.current) * SWING * amount
-    const pose = activity ? exercisePose(activity, repProgress(activity), paceSeconds(activity)) : null
+    // Still stepping onto a machine: stand normally until there
+    const pose = activity?.arrived ? exercisePose(activity, repProgress(activity), paceSeconds(activity)) : null
     const jointSpeed = pose?.follow ? FOLLOW_EASE : JOINT_EASE
     const ease = (from: number, to: number, speed = jointSpeed) => MathUtils.damp(from, to, speed, delta)
 

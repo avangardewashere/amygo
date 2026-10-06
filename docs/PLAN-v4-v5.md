@@ -105,6 +105,16 @@ start moving with them. No more handles waiting in mid-air for half a second whi
 **Visual check:** on each machine, the person arrives first and the moving parts begin with them. The measured hand gap during
 the step-on phase is gone (it was about 20 cm on the cable machine).
 
+**Status: done** (2026-10-06, on branch `v4-smoother-play`). 46 tests passing (4 new: V4B2-T1..T4), each checked to fail
+when the behaviour it guards is broken (the first try at T3 didn't catch a clock that wasn't restarted; it now checks the
+arrival time itself). `Player` calls `stepOnto()` every frame; within 2 cm of the spot the exercise begins and the machine
+wakes. Sessions now have an id, since the clock restarting on arrival can no longer tell one go from the next. Five earlier
+tests started an exercise and checked the machine straight away; they now step onto the spot first, with their checks
+unchanged. The plan's "machines need no change" was almost true: the cable machine's rope and V-handle rest somewhere other
+than the hands' starting spot, so they now glide into the hands over the first 0.4 s (and back to rest after). Measured in
+the browser on the cable machine: while stepping on, the rope stays at rest; on arrival it reaches the hands (36.9 cm → 2.8 cm
+→ 0.1 cm over three frames) and stays within 0.2 cm. The optional Android check has not been done.
+
 **Summary:** Exercises now start when the person arrives, so handles never wait in mid-air while they walk over.
 
 ### Block 3: Legs straddle the flat bench

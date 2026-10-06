@@ -17,6 +17,7 @@ import {
   setNear,
   setNearFurniture,
   stepOffSpot,
+  stepOnto,
   stopExercise,
   useGym,
   type Activity,
@@ -118,6 +119,7 @@ export function Player() {
       player.position.y = MathUtils.damp(player.position.y, y, STEP_EASE, delta)
       player.position.z = MathUtils.damp(player.position.z, z, STEP_EASE, delta)
       turnToward(player, current.faceYaw, delta)
+      stepOnto(player.position) // once on the spot, the exercise begins
       // Legs only walk on machines that move under you (the treadmill); seated ones keep still
       const pace = EXERCISES[current.kind].stride ?? 0
       gait.current.amount = MathUtils.damp(gait.current.amount, pace, 4, delta)

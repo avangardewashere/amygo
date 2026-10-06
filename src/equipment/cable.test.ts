@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { exercisePose } from '../player/poseMath'
 import { limbEnds } from '../player/bodyKinematics'
 import { HIP_Y, SHOULDER_X } from '../player/proportions'
-import { getGym, menuActions, setNearFurniture, stopExercise } from '../interaction/gymStore'
+import { getGym, menuActions, setNearFurniture, stepOnto, stopExercise } from '../interaction/gymStore'
 import { CABLE, activeCable, pulleyFor, pushdownArm, rowPosition, stackLift } from './cableGeometry'
+
+
+// The person steps onto the machine's spot (in the game, <Player> does this every frame)
+const stepOn = () => stepOnto(getGym().activity!.stand!)
 
 // 24 evenly spread moments through one rep (t goes 0 → 1; reps play it back down)
 const MOMENTS = Array.from({ length: 24 }, (_, i) => i / 23)
@@ -73,6 +77,7 @@ describe('cable machine', () => {
       menuActions('furniture', getGym(), 'cableMachine')
         .find((action) => action.label === name)!
         .run()
+      stepOn()
     }
     start('Tricep pushdowns')
     expect(activeCable('cable-1')).toBe('pushdown')

@@ -12,6 +12,7 @@ import {
   paceSeconds,
   setNearFurniture,
   stepOffSpot,
+  stepOnto,
   stopExercise,
   withNewPace,
   type Activity,
@@ -26,6 +27,7 @@ const start = (machineId: string, type: 'treadmill' | 'bike', label: string) => 
   menuActions('furniture', getGym(), type)
     .find((action) => action.label === label)!
     .run()
+  stepOnto(getGym().activity!.stand!) // the person steps onto the machine
 }
 const pick = (label: string) =>
   menuActions('furniture', getGym())
@@ -59,7 +61,7 @@ describe('changing pace without stopping', () => {
   })
 
   it('V4B1-T3: time and distance carry on across a switch', () => {
-    const walking: Activity = { kind: 'walk', machineId: 'treadmill-1', startedAt: 0, faceYaw: 0 }
+    const walking: Activity = { kind: 'walk', machineId: 'treadmill-1', session: 1, arrived: true, startedAt: 0, faceYaw: 0 }
     // 60 s walking at 1.5 m/s, then 60 s running at 3 m/s: 90 m + 180 m, 2 minutes
     const running = withNewPace(walking, 'run', 60_000)
     expect(progressText(running, 120_000)).toBe('0.27 km · 2:00')
@@ -69,7 +71,7 @@ describe('changing pace without stopping', () => {
   })
 
   it('V4B1-T4: the pedals never jump when switching from Easy ride to Sprint', () => {
-    const easy: Activity = { kind: 'ride', machineId: 'bike-1', startedAt: 0, faceYaw: 0 }
+    const easy: Activity = { kind: 'ride', machineId: 'bike-1', session: 1, arrived: true, startedAt: 0, faceYaw: 0 }
     const sprint = withNewPace(easy, 'sprint', 10_000)
     // Just before and just after the switch, the pedals are where they were
     expect(crankSoFar(sprint, 10_000)).toBeCloseTo(crankSoFar(easy, 10_000), 9)

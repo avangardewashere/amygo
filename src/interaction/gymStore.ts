@@ -41,11 +41,16 @@ type Point = { x: number; z: number }
 // An exercise in progress. startedAt drives the animation and the counters,
 // so they always agree. After a change of pace (walk → run), `pace` says when
 // the current pace began and what had built up before it, so the distance and
-// the pedals carry on from there; startedAt still times the whole session. Machines you get on (treadmill) also say where to
+// the pedals carry on from there; startedAt still times the whole session.
+// On machines you get on, an exercise starts with the person stepping on
+// (arrived: false): the machine stays at rest and the clock starts only when
+// they reach the spot. session tells one go on a machine from the next. Machines you get on (treadmill) also say where to
 // stand while using it, and where to step back to afterwards.
 export type Activity = {
   kind: ExerciseKind
   machineId: string
+  session: number
+  arrived: boolean
   startedAt: number
   faceYaw: number
   stand?: Point & { y: number }
@@ -192,11 +197,25 @@ function fromFurniture(item: Furniture, localX: number, localZ: number): Point {
   }
 }
 
+let sessions = 0
+
+// Wake the machine up: its moving parts start, on the same clock as the person
+function runMachine(activity: Activity) {
+  const { kind, machineId, startedAt } = activity
+  machine.activeId = machineId
+  machine.exercise = kind
+  machine.speed = EXERCISES[kind].speed ?? 0
+  machine.cadence = EXERCISES[kind].cadence ?? 0
+  machine.backrest = EXERCISES[kind].backrest ?? 0
+  machine.crankOffset = 0
+  machine.startedAt = startedAt
+}
+
 function startExercise(kind: ExerciseKind) {
   const { nearFurnitureId, holding } = store.get()
   const piece = getBuild().items.find((item) => item.id === nearFurnitureId)
   if (!piece || holding) return
-  const base = { kind, machineId: piece.id, startedAt: performance.now() }
+  const base = { kind, machineId: piece.id, session: ++sessions, startedAt: performance.now() }
 
   let activity: Activity
   const standAt = EXERCISES[kind].standAt ?? catalogEntry(piece.type).standAt
@@ -205,23 +224,33 @@ function startExercise(kind: ExerciseKind) {
     const spot = fromFurniture(piece, 0, standAt.z)
     activity = {
       ...base,
+      arrived: false, // step on first; the exercise begins on arrival (see stepOnto)
       faceYaw: -piece.turns * (Math.PI / 2),
       stand: { ...spot, y: standAt.y },
       returnTo: { x: playerPose.x, z: playerPose.z },
     }
   } else {
     // Turn your back to the rack, the way people step away from it to lift
-    activity = { ...base, faceYaw: Math.atan2(playerPose.x - piece.x, playerPose.z - piece.z) }
+    activity = { ...base, arrived: true, faceYaw: Math.atan2(playerPose.x - piece.x, playerPose.z - piece.z) }
+    runMachine(activity) // nothing to step onto: start straight away
   }
-  // Tell the machine it's running, so its moving parts (belt, sled) animate
-  machine.activeId = piece.id
-  machine.exercise = kind
-  machine.speed = EXERCISES[kind].speed ?? 0
-  machine.cadence = EXERCISES[kind].cadence ?? 0
-  machine.backrest = EXERCISES[kind].backrest ?? 0
-  machine.crankOffset = 0
-  machine.startedAt = base.startedAt
   store.set({ activity, menu: null })
+}
+
+// How close (meters) the person must be to a machine's spot to count as on it
+export const ARRIVE_DISTANCE = 0.02
+
+// Called every frame with where the person is. Once they've stepped onto the
+// machine's spot, the exercise begins: the clock starts from now, so the first
+// rep starts from the machine's resting position, and the machine wakes up.
+export function stepOnto(position: { x: number; y: number; z: number }, now = performance.now()) {
+  const { activity } = store.get()
+  if (!activity || activity.arrived || !activity.stand) return
+  const { x, y, z } = activity.stand
+  if (Math.hypot(position.x - x, position.y - y, position.z - z) > ARRIVE_DISTANCE) return
+  const begun = { ...activity, arrived: true, startedAt: now }
+  runMachine(begun)
+  store.set({ activity: begun })
 }
 
 // The same session at a new pace, from `now`: same machine, same spot, same
@@ -274,7 +303,7 @@ export function stopExercise() {
 // (the same session carrying on, e.g. at a new pace, or they never moved).
 export function stepOffSpot(previous: Activity | null, current: Activity | null = null) {
   if (!previous?.returnTo) return null
-  const sameSession = current?.machineId === previous.machineId && current.startedAt === previous.startedAt
+  const sameSession = current?.session === previous.session
   if (sameSession) return null
   return { x: previous.returnTo.x, y: 0, z: previous.returnTo.z }
 }
@@ -355,8 +384,10 @@ function drop() {
 export type MenuAction = { label: string; run: () => void }
 
 // Mid-exercise: the other paces you can switch to (shown in the exercise popup)
-export const paceActions = (activity: Pick<Activity, 'kind'>): MenuAction[] =>
-  otherPaces(activity.kind).map((kind) => ({ label: EXERCISES[kind].name, run: () => switchPace(kind) }))
+export const paceActions = (activity: Pick<Activity, 'kind'> & Partial<Pick<Activity, 'arrived'>>): MenuAction[] =>
+  activity.arrived === false
+    ? [] // still stepping on
+    : otherPaces(activity.kind).map((kind) => ({ label: EXERCISES[kind].name, run: () => switchPace(kind) }))
 
 // Pass the state the actions depend on (components get it from useGym/useBuild)
 export function menuActions(
