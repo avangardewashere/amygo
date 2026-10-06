@@ -47,11 +47,12 @@ describe('remembering the layout', () => {
     expect(piece(build, 'rack-1')).toMatchObject({ x: 0, z: 0 })
 
     // …and so is turning one
+    const startTurns = piece(build, 'bench-1').turns
     build.select('bench-1')
     build.rotateSelected()
     const before = build.getBuild().items
     build = await openGym(storage) // reload
-    expect(piece(build, 'bench-1').turns).toBe(1)
+    expect(piece(build, 'bench-1').turns).toBe((startTurns + 1) % 4)
     expect(build.getBuild().items).toEqual(before)
   })
 
@@ -61,10 +62,10 @@ describe('remembering the layout', () => {
       '{not json',
       '"just a string"',
       JSON.stringify({ version: 99, items: [{ id: 'rack-1', type: 'dumbbellRack', x: 0, z: 0, turns: 0 }] }),
-      JSON.stringify({ version: 1, items: [{ id: 'rack-1', type: 'treadmill', x: 0, z: 0, turns: 0 }] }), // wrong type
-      JSON.stringify({ version: 1, items: [{ id: 'rack-1', type: 'dumbbellRack', x: 'left', z: 0, turns: 0 }] }),
-      JSON.stringify({ version: 1, items: [{ id: 'rack-1', type: 'dumbbellRack', x: 0, z: 0, turns: 7 }] }),
-      JSON.stringify({ version: 1, items: [null, 5, { id: 'ghost-9', type: 'spaceship', x: 1, z: 1, turns: 0 }] }),
+      JSON.stringify({ version: 2, items: [{ id: 'rack-1', type: 'treadmill', x: 0, z: 0, turns: 0 }] }), // wrong type
+      JSON.stringify({ version: 2, items: [{ id: 'rack-1', type: 'dumbbellRack', x: 'left', z: 0, turns: 0 }] }),
+      JSON.stringify({ version: 2, items: [{ id: 'rack-1', type: 'dumbbellRack', x: 0, z: 0, turns: 7 }] }),
+      JSON.stringify({ version: 2, items: [null, 5, { id: 'ghost-9', type: 'spaceship', x: 1, z: 1, turns: 0 }] }),
     ]
     for (const saved of bad) {
       const build = await openGym(fakeStorage({ saved }))

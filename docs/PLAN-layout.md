@@ -1,0 +1,304 @@
+# Gym 3D: layout and look plan (L1 and L2)
+
+Right now the gym is a 20 × 12 m room with 11 pieces spread along the walls, one of each kind, and a bare painted room
+around them. It reads as a big empty box, not a gym. This plan fixes that in two versions:
+
+- **L1: A full gym floor.** About 28 pieces instead of 11, grouped into zones the way real gyms are, with a floor that
+  marks each zone.
+- **L2: Walls with character.** Wall finishes, a mirror, painted zone names and a gym name, and the small things that
+  make a gym feel used (plate trees, kettlebells, TVs, a clock).
+
+They're called **L1 / L2** (not v8 / v9) because when they get built is a decision below (D1), and the numbers v6 and v7
+are already taken by the app shell and the workout log.
+
+## How this plan works
+
+Same rules as before:
+
+- **3 features per version, one feature per block.**
+- **Each block has a test phase** (Vitest, each test checked to fail when the thing it guards is broken) that must pass
+  before the next block starts. The Android check stays **optional** and is never marked passed unless done on the phone.
+- **Each block ends with a 1–3 sentence summary.**
+- **We stop after every block** and wait for your yes. A yes to this plan is not a yes to start building.
+- Each version gets its own branch (`l1-gym-floor`, `l2-walls`), merged when you say so.
+
+## The starting point (2026-10-06)
+
+| What | Today |
+| --- | --- |
+| Room | 20 × 12 × 4.5 m, light grey walls, one orange stripe at 1.2 m, dark floor |
+| Furniture | 11 pieces, one of each kind (the dumbbell rack is the only one of its kind that matters twice) |
+| Floor used | About 21 m² of 240 m², so 9 % of the floor has anything on it |
+| Layout | Pieces along the walls, the middle is empty, nothing is grouped by what it's for |
+
+Good news from reading the code: **more than one of a kind already works.** Every piece has its own `id`, and the
+machine state, menus, and exercises all look pieces up by `id`, never by kind. So a second treadmill is just a second
+line in `DEFAULT_ITEMS`. The real work is choosing where things go, keeping it fast, and dressing the room.
+
+## The new floor plan
+
+Seen from above, front wall at the bottom (the side the camera looks in from). Each cell is about 1 m.
+
+```
+ back wall  (mirror behind the dumbbells, gym name above the squat racks)
++--------------------------------------------------------------------------+
+| PU  PU      DR  DR         [ SR ]     [ SR ]          CB  CB              |
+|             ab  ab  ab     platform   platform                     TV TV  |
+| LP                                                              TM <-|    |
+| LP          fb  fb  fb                                          TM <-|    |
+|                                                                 TM <-|    |
+| LP          ~~~~~~~~~~~~~~ turf lane ~~~~~~~~~~~~~~             TM <-|    |
+| LP          ~~ mats ~~ kettlebells ~~ sled ~~~~~~~~             BK        |
+| CF                                                              BK        |
+| CF       RW RW RW                 (open: walkway in)            BK        |
++--------------------------------------------------------------------------+
+ front wall (hidden in the dollhouse view)
+
+PU pull-up   DR dumbbell rack   ab adjustable bench   fb flat bench   SR squat rack
+CB cable     TM treadmill       BK bike   LP leg press   CF chest fly   RW rower
+```
+
+| Zone | Where | Pieces | Count |
+| --- | --- | --- | --- |
+| **Free weights** | Back wall, left of centre | 2 dumbbell racks against a mirror, 3 adjustable benches in a row in front, 3 flat benches behind those | 8 |
+| **Strength** | Back wall, centre | 2 squat racks, each on its own wooden lifting platform | 2 |
+| **Cable corner** | Back wall, right | 2 cable machines side by side | 2 |
+| **Pull-up corner** | Back-left corner | 2 pull-up stations | 2 |
+| **Cardio** | Right wall, facing it | 4 treadmills, then 3 bikes, TVs on the wall above | 7 |
+| **Machines** | Left wall | 2 leg presses, 2 chest fly machines | 4 |
+| **Rowing** | Front-left | 3 rowers side by side | 3 |
+| **Turf lane** | Centre | No machines: a green strip with mats and props (L2) | 0 |
+| | | **Total** | **28** |
+
+Why this shape:
+
+- **Zones by what they're for**, like a real gym: cardio together, free weights near a mirror, heavy lifting on
+  platforms. It also makes the gym readable at a glance from the dollhouse view.
+- **Cardio on the right wall, facing it,** so the TVs above them are on a wall the camera can actually see. (Facing the
+  front wall would be more "real", but the front wall hides itself in the dollhouse view, so the TVs would never show.)
+- **The front strip stays open.** It's what the camera looks across, and it's the way in, so filling it would hide
+  everything else.
+- **Aisles at least 0.8 m** between groups so the person can walk to every machine. A test checks this (L1-B1-T3).
+
+---
+
+## L1: A full gym floor
+
+### Block 1: Zoned layout with more of each
+
+**What you'll see:** the gym opens with 28 pieces in the zones above instead of 11 spread along the walls. Every piece
+works: walk up to any of the 4 treadmills and run on it, any of the 3 rowers and row.
+
+**How:**
+- `DEFAULT_ITEMS` in `src/build/buildStore.ts` gets the new list. Ids follow today's pattern (`treadmill-1` …
+  `treadmill-4`). Exact spots are the table above snapped to the 25 cm grid; small nudges are fine as long as the tests
+  pass.
+- **Old saved layouts (per D2):** a layout saved by v5 Block 1 would drag today's 11 pieces back to their old spots,
+  right on top of new ones. So the saved layout version goes from 1 to 2, and a version-1 save is ignored once. Your
+  browser starts with the new layout; anything you move after that is remembered as before.
+- Nothing else should need to change. If something turns out to assume "one of each" (for example a menu that finds
+  "the treadmill"), that's a bug and gets fixed here.
+
+**Tests:**
+
+| ID | Checks |
+| --- | --- |
+| L1B1-T1 | Every default piece sits fully inside the walls and overlaps no other piece |
+| L1B1-T2 | Every id is unique, and every kind has the count in the table |
+| L1B1-T3 | Every piece can be reached on foot: from the open front strip, a walk on the 25 cm grid around all footprints gets within reach of each piece |
+| L1B1-T4 | Two pieces of the same kind keep separate state: start an exercise on `treadmill-2`, and only `treadmill-2` is the active machine |
+| L1B1-T5 | A version-1 saved layout is ignored, and a version-2 one is applied |
+
+**Visual check:** open the gym, see the zones. Use one treadmill, one rower, one bench that weren't there before.
+
+**Status: done** (2026-10-07, on branch `l1-gym-floor`, from `master` at 84f0b58). 65 tests passing (5 new:
+L1B1-T1..T5), each checked to fail when the thing it guards is broken: a rower shoved into its neighbour (T1), a treadmill
+removed (T2), a cable machine parked in front of the treadmills (T3 names `treadmill-2` and `treadmill-3` as unusable),
+machine state picked by kind instead of id (T4), the save version left at 1 (T5). The walk check lives in
+`src/build/walkable.ts`: it floods the floor on the 25 cm grid from where the person starts and asks the game's own
+"closest machine in reach" question at every spot, so a machine hidden behind its neighbours counts as unusable. One old
+test (V5B1-T1) assumed the bench starts unturned; it now compares against the bench's own start. The other V5B1 tests
+now write version-2 saves. No code outside the layout needed changing: everything was already keyed by id. Checked in the
+browser: all 28 pieces in their zones, no console errors; ran on `treadmill-3` (popup counting), rowed on `rower-2`,
+benched on `bench-3`, each the only active machine. **Cost, for Block 3:** `?perf` shows **1,245 draws** and 32.9k
+triangles per frame at High, up from 576 draws with 11 pieces. Seen from the default camera on a wide screen, the right
+wall (where the TVs will go in L2) is the hidden one, so L2 Block 3 has to check the TVs from the angles people actually see.
+
+**Summary:** The gym opens with 28 pieces in seven zones (pull-ups, free weights, strength, cables, cardio, machines, rowing)
+instead of 11 along the walls, and every new piece works. Old saved layouts are ignored once so nothing lands on top of
+anything.
+
+### Block 2: A floor that marks the zones
+
+**What you'll see:** the floor stops being one dark grey sheet. Squat racks stand on wooden lifting platforms with a
+rubber centre, the middle has a green turf lane with white lines, the cardio row sits on lighter rubber tiles, and thin
+yellow lines mark the walkway in.
+
+**How:**
+- A new `src/scene/Floor.tsx` replaces the floor plane in `Room.tsx`. Zones are flat shapes a few mm above the floor
+  (same trick as the wall stripe: lifted so they don't flicker).
+- Platforms, turf and tile areas are **data** (a list of rectangles in `src/scene/floorZones.ts`), so tests can check
+  them and moving a zone is a one-line change.
+- The base floor gets a subtle **tile pattern** (1 × 1 m rubber tiles) from a small texture drawn in code at load, so
+  there's no image to download.
+- Platforms follow the squat racks by id: if you move a squat rack in build mode, its platform goes with it (per D3).
+  Turf and tile zones stay put.
+- Floor zones are **not** obstacles: you walk on them.
+
+**Tests:**
+
+| ID | Checks |
+| --- | --- |
+| L1B2-T1 | Every floor zone lies inside the room |
+| L1B2-T2 | Each squat rack's platform is centred under it and bigger than it on every side, including after it's moved or turned |
+| L1B2-T3 | Fixed zones (turf, cardio tiles) don't overlap each other |
+| L1B2-T4 | Floor zones don't block walking (the reach test from L1B1-T3 still passes with them in) |
+
+**Visual check:** platforms, turf, tiles, and walkway lines visible from the default view; move a squat rack and its
+platform follows.
+
+**Summary:** _(written when the block is done)_
+
+### Block 3: Keep it fast with 28 pieces
+
+**What you'll see:** nothing new, and that's the point. The gym with 28 pieces should feel as smooth as it did with 11.
+
+**How:**
+- **Measure first.** A `?perf` readout (it may already exist by then from v5 Block 3; if so, reuse it) shows frames per
+  second and **draw calls** (how many separate things the graphics card is asked to draw each frame). Note the numbers
+  for 11 pieces (on `master`) and for 28.
+- Likely fixes, applied only if the numbers say so:
+  - **Share geometry and materials.** Today each machine builds its own boxes and colours when it appears. Four
+    treadmills means four copies of identical shapes. Moving those to one shared copy per kind costs nothing visually.
+  - **Shadows only where they show.** Small parts (bolts, handles, cables) don't need to cast shadows; frames and
+    seats do.
+  - **Freeze idle machines.** A machine that isn't in use doesn't need to update its moving parts every frame.
+- A **draw-call budget** test: count the meshes the default layout creates and fail if it goes over the budget agreed in
+  D4. This stops L2 (and anything later) from quietly making the gym slow.
+
+**Tests:**
+
+| ID | Checks |
+| --- | --- |
+| L1B3-T1 | The default layout stays under the draw-call budget (D4) |
+| L1B3-T2 | Two machines of the same kind share one geometry and one material per part, not copies |
+| L1B3-T3 | An idle machine's moving parts don't change between frames; an active one's do |
+
+**Visual check:** `?perf` shows the numbers before and after, written into this block's status. Optional Android check:
+open the gym on the phone and note the frames per second.
+
+**Summary:** _(written when the block is done)_
+
+---
+
+## L2: Walls with character
+
+### Block 1: Wall finishes and a mirror
+
+**What you'll see:** the walls get a real gym finish. A dark charcoal lower band (0 to 1.2 m, where people knock into
+walls) with the orange stripe moved to its top edge, light walls above. The back wall behind the squat racks becomes an
+**accent wall** (dark, with vertical wood slats). Behind the dumbbell racks, a wide **mirror** from 0.3 m to 2.4 m.
+
+**How:**
+- `Room.tsx` grows from "plane + stripe" to a list of **wall pieces** (band, stripe, slat panel, mirror) placed by data in
+  `src/scene/wallDesign.ts`: which wall, from where to where, at what height. Same lifted-off-the-wall trick as the
+  stripe today.
+- **The mirror (per D5):** a true reflection re-draws the whole gym a second time every frame, which is the single most
+  expensive thing we could add. The recommended version is a **fake mirror**: a glossy, slightly blue-grey panel with a
+  soft gradient, which reads as a mirror from the dollhouse view at a tiny cost. A real reflection can be turned on for
+  desktop only later.
+- Slats are thin boxes **merged into one mesh** (one draw call for the whole slat wall, not one per slat).
+
+**Tests:**
+
+| ID | Checks |
+| --- | --- |
+| L2B1-T1 | Every wall piece lies within its wall's length and the room's height |
+| L2B1-T2 | The mirror lines up behind the dumbbell racks (covers both racks' width) |
+| L2B1-T3 | Wall pieces on the same wall don't overlap unless they're meant to stack (stripe on top of band) |
+| L2B1-T4 | The draw-call budget from L1B3-T1 still passes |
+
+**Visual check:** the four walls from the default view and one orbit round; the mirror reads as glass.
+
+**Summary:** _(written when the block is done)_
+
+### Block 2: Painted zone names and a gym name
+
+**What you'll see:** big painted letters on the walls, like real gyms have: **FREE WEIGHTS** above the mirror,
+**CARDIO** above the treadmills, **STRENGTH** on the accent wall, and the **gym's name** (D6) large on the back wall,
+plus one short painted line (for example "ONE MORE REP") on the left wall.
+
+**How:**
+- Text is drawn into a texture **in code at load** using a system font, so there's no font file to download (a 3D text
+  library would add a font file and some code for a few words).
+- Each piece of wall art is data in `wallDesign.ts` (text, wall, position, height, colour), so changing a word is a
+  one-line change.
+- Zone names sit **above** the equipment (2.6 to 3.4 m), so machines never cover them.
+
+**Tests:**
+
+| ID | Checks |
+| --- | --- |
+| L2B2-T1 | Every painted text fits within its wall and doesn't overlap the mirror, slats or other text |
+| L2B2-T2 | Each zone name sits over its zone (CARDIO's x/z range overlaps the cardio pieces' range on that wall) |
+| L2B2-T3 | The texture size for each text is worked out from its length, so long words aren't squashed (aspect ratio test) |
+
+**Visual check:** every word readable from the default view on desktop and in portrait.
+
+**Summary:** _(written when the block is done)_
+
+### Block 3: Props that make it feel used
+
+**What you'll see:** the small things every gym has, placed where they'd really be:
+
+| Prop | Where | Moves? |
+| --- | --- | --- |
+| Plate tree with plates | Beside each squat rack | Follows its rack |
+| Kettlebell shelf (6 bells) | Turf lane, back edge | Fixed |
+| Exercise mats, foam rollers, a sled | On the turf | Fixed |
+| 2 wall TVs (screens glow, show a simple looping picture) | Right wall, above the treadmills | Fixed |
+| Wall clock showing the real time | Left wall | Fixed |
+| Water fountain, 2 plants, speakers | Corners and near the way in | Fixed |
+
+**How:**
+- Props are built the same way as the machines (simple shapes, shared materials), in `src/props/`. They are **not**
+  in the build catalog: you can't drag them, and they have no menu (per D7). Floor props are solid, so the person walks
+  round them.
+- Plate trees follow their squat rack the same way platforms do in L1 Block 2.
+- The clock's hands come from a pure function of the time, so it's testable.
+
+**Tests:**
+
+| ID | Checks |
+| --- | --- |
+| L2B3-T1 | No floor prop overlaps a piece of furniture or another prop, and all are inside the room |
+| L2B3-T2 | Every machine is still reachable on foot with the props in (the L1B1-T3 walk test, props as obstacles) |
+| L2B3-T3 | Clock hands: 3:00 puts the hour hand at a quarter turn and the minute hand at 12; 6:30 puts the hour hand halfway between 6 and 7 |
+| L2B3-T4 | A plate tree stays beside its squat rack after the rack is moved or turned |
+| L2B3-T5 | The draw-call budget still passes |
+
+**Visual check:** the whole gym from the default view, then walk the person through each zone. Optional Android check.
+
+**Summary:** _(written when the block is done)_
+
+---
+
+## Decisions (decided 2026-10-07, all as recommended)
+
+| # | Question | Decision |
+| --- | --- | --- |
+| D1 | When: **now, before v5 Block 3** (the phone check), or **after v7**? | **Now, before v5 Block 3.** Going from 11 to 28 pieces plus wall dressing is the biggest performance change the gym will get, so the phone check should measure *this* gym, not today's empty one. v5 Block 2 (the human model) can go before or after; it doesn't touch the layout. |
+| D2 | Old saved layouts: **ignore them once** (everyone starts on the new layout) or **keep old positions** for the 11 original pieces? | **Ignore once.** Old positions would land on top of the new pieces. Only this browser's own arrangement is lost. |
+| D3 | Lifting platforms and plate trees **follow their squat rack** when it's moved, or stay fixed? | **Follow.** A platform left behind on empty floor looks broken. |
+| D4 | Draw-call budget: set it at **the L1 Block 3 measurement + 30 %** as headroom for L2? | **Yes.** A fixed number now would be a guess; measuring first gives a real one. |
+| D5 | Mirror: **fake** (glossy panel, nearly free) or **real reflection** (draws the gym twice, desktop only)? | **Fake now.** A real one can be a later toggle. |
+| D6 | Gym name painted on the back wall: what should it say? | **GYM 3D** (the default; can be changed in L2 Block 2, it's one line) |
+| D7 | Props: **fixed decoration** or **movable in build mode**? | **Fixed** for now. Making them movable means build mode, saving and the catalog all learn a second kind of item; that's its own block if you want it later. |
+
+## Not in this plan
+
+- A bigger room or a second room (the room size is still one line in `dimensions.ts` if you want that later).
+- Adding or deleting pieces in build mode (a "Duplicate" button). The default gym gets more pieces, but build mode still
+  only moves and turns them.
+- Other people in the gym.
+- New exercises: every new piece is another copy of a machine that already works.

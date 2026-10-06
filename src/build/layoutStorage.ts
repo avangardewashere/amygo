@@ -9,7 +9,9 @@
 import type { Furniture } from './buildStore'
 
 export const LAYOUT_KEY = 'gym3d.layout'
-const VERSION = 1
+// 2: the zoned 28-piece gym (L1). A version-1 save placed the old 11 pieces
+// where they would now land on top of new ones, so it is ignored once.
+export const LAYOUT_VERSION = 2
 
 // The browser's storage, or null where there is none (private browsing can
 // block it, and even reading the property can throw)
@@ -33,7 +35,7 @@ export function readSavedLayout(): string | null {
 export function saveLayout(items: Furniture[]) {
   try {
     const pieces = items.map(({ id, type, x, z, turns }) => ({ id, type, x, z, turns }))
-    storage()?.setItem(LAYOUT_KEY, JSON.stringify({ version: VERSION, items: pieces }))
+    storage()?.setItem(LAYOUT_KEY, JSON.stringify({ version: LAYOUT_VERSION, items: pieces }))
   } catch {
     // Nothing to do: remembering the layout is a convenience, not a requirement
   }
@@ -48,7 +50,7 @@ export function applySavedLayout(defaults: Furniture[], saved: string | null): F
   let entries: unknown[] = []
   try {
     const parsed: unknown = saved === null ? null : JSON.parse(saved)
-    if (parsed && typeof parsed === 'object' && 'version' in parsed && parsed.version === VERSION && 'items' in parsed) {
+    if (parsed && typeof parsed === 'object' && 'version' in parsed && parsed.version === LAYOUT_VERSION && 'items' in parsed) {
       if (Array.isArray(parsed.items)) entries = parsed.items
     }
   } catch {
