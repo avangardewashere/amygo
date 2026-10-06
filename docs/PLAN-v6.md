@@ -167,7 +167,8 @@ That finishes v6.
 
 ## Not in this plan
 
-- A log or history of sets (a possible **Today** tab; see D2). That needs the saving work from v5 Block 1 first.
+- A log or history of sets (a **Today** tab; see D2). That is **v7**, planned separately in `PLAN-v7.md` and built right
+  after v6. It needs the saving work from v5 Block 1 and the Exercises tab from v6 Block 2.
 - Accounts, sharing, or anything sent to a server.
 - New machines or exercises.
 - Shrinking three.js itself, or the character model. Measured first in v5 Block 3; only worth doing if the phone numbers
