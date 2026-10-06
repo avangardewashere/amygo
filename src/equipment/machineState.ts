@@ -11,6 +11,7 @@ export const machine = {
   exercise: null as ExerciseKind | null, // which exercise (the cable machine has two pulleys)
   speed: 0, // treadmill belt speed, m/s
   cadence: 0, // bike pedal turns per second
-  startedAt: 0, // when the exercise started (for rep and pedal timing)
+  startedAt: 0, // when the exercise (or its current pace) started (for rep and pedal timing)
+  crankOffset: 0, // bike: how far the pedals had turned before the current pace (radians)
   backrest: 0, // adjustable bench: backrest angle up from flat, radians
 }

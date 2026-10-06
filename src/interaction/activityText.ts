@@ -1,6 +1,6 @@
 // The words in the exercise popup, e.g. "Cycling · 20.0 km/h" over
 // "0.15 km · 0:27". Kept apart from the popup component so they can be tested.
-import { EXERCISES, repsDone, secondsSince, type Activity } from './gymStore'
+import { EXERCISES, metersSoFar, repsDone, secondsSince, type Activity } from './gymStore'
 import { strokesSince } from '../equipment/rowerGeometry'
 
 // m/s → km/h, the unit treadmill and bike consoles show
@@ -23,12 +23,12 @@ export function headline(activity: Pick<Activity, 'kind'>) {
 }
 
 // Bottom line: distance and time when there's a speed, otherwise the rep count
-export function progressText(activity: Pick<Activity, 'kind' | 'startedAt'>, now: number) {
+export function progressText(activity: Pick<Activity, 'kind' | 'startedAt' | 'pace'>, now: number) {
   const { speed, strokes } = EXERCISES[activity.kind]
   if (speed) {
-    // Distance = speed × time
+    // Distance = speed × time, added up across pace changes; the clock times the whole session
     const seconds = secondsSince(activity, now)
-    const km = (speed * seconds) / 1000
+    const km = metersSoFar(activity, now) / 1000
     if (strokes) {
       const count = strokesSince(seconds)
       return `${count} ${count === 1 ? 'stroke' : 'strokes'} · ${km.toFixed(2)} km`

@@ -73,7 +73,12 @@ const curlArms = (t: number, tuck: number) => () => arm({ shoulderX: tuck, elbow
 // Every exercise as a body pose. t: where in the rep (0 → 1 → 0, see reps.ts);
 // seconds: time since starting (for things that keep going round, like pedals).
 // Exercises not listed (walking and running on the treadmill) use the walking pose.
-export function exercisePose(activity: Pick<Activity, 'kind'>, t: number, seconds = 0): BodyPose | null {
+// seconds: at the current pace; activity.pace carries the pedals' angle from before a pace change.
+export function exercisePose(
+  activity: Pick<Activity, 'kind'> & Partial<Pick<Activity, 'pace'>>,
+  t: number,
+  seconds = 0,
+): BodyPose | null {
   switch (activity.kind) {
     case 'curl':
       return { lean: 0, foot: null, arms: curlArms(t, 0.12) }
@@ -125,7 +130,7 @@ export function exercisePose(activity: Pick<Activity, 'kind'>, t: number, second
       }
     case 'ride':
     case 'sprint':
-      return bikePose(activity.kind === 'sprint' ? 'sprint' : 'easy', seconds)
+      return bikePose(activity.kind === 'sprint' ? 'sprint' : 'easy', seconds, activity.pace?.crank ?? 0)
     case 'row':
       return rowPose(seconds)
     case 'squat':
@@ -240,9 +245,9 @@ function rowPose(seconds: number): BodyPose {
 
 // On the bike: leaning forward, each foot on its pedal going round, hands on
 // the handlebars. Feet and hands are worked out with the two-bone maths below.
-function bikePose(pace: 'easy' | 'sprint', seconds: number): BodyPose {
+function bikePose(pace: 'easy' | 'sprint', seconds: number, crankBefore = 0): BodyPose {
   const lean = BIKE.lean[pace]
-  const angle = crankAngle(BIKE.cadence[pace], seconds)
+  const angle = crankBefore + crankAngle(BIKE.cadence[pace], seconds)
   // Leaning forward moves the shoulders forward and down; find where they are
   const rise = SHOULDER_Y - HIP_Y
   const shoulder = { z: BIKE.hipZ + rise * Math.sin(lean), y: BIKE.hipY + rise * Math.cos(lean) }

@@ -1,7 +1,7 @@
 import { useRef, type ReactNode, type RefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { MathUtils, type Group } from 'three'
-import { repProgress, secondsSince, type Activity } from '../interaction/gymStore'
+import { paceSeconds, repProgress, type Activity } from '../interaction/gymStore'
 import { arm, exercisePose, legAngles } from './poseMath'
 import {
   ELBOW_DROP,
@@ -65,7 +65,7 @@ export function Person({ gait, hands = {}, activity = null }: PersonProps) {
     const amount = gait.current.amount
     phase.current += delta * STRIDE_SPEED * amount
     const swing = Math.sin(phase.current) * SWING * amount
-    const pose = activity ? exercisePose(activity, repProgress(activity), secondsSince(activity)) : null
+    const pose = activity ? exercisePose(activity, repProgress(activity), paceSeconds(activity)) : null
     const jointSpeed = pose?.follow ? FOLLOW_EASE : JOINT_EASE
     const ease = (from: number, to: number, speed = jointSpeed) => MathUtils.damp(from, to, speed, delta)
 

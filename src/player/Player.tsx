@@ -107,7 +107,7 @@ export function Player() {
 
     // Just finished using a machine you stood on: step back off to where you were
     const previous = lastActivity.current
-    const stepOff = previous !== current ? stepOffSpot(previous) : null
+    const stepOff = previous !== current ? stepOffSpot(previous, current) : null
     if (stepOff) player.position.set(stepOff.x, stepOff.y, stepOff.z)
     lastActivity.current = current
 

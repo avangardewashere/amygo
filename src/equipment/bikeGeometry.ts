@@ -2,6 +2,7 @@
 // pose and the tests, so feet stay on the pedals and hands on the handlebars.
 // In the bike's own coordinates: you sit facing +z.
 import { HIP_X } from '../player/proportions'
+import { machine } from './machineState'
 
 export const BIKE = {
   hipY: 0.9, // where the hips sit on the saddle
@@ -21,6 +22,11 @@ export const BIKE = {
 // The crank's angle after pedalling for `seconds` at `cadence` turns per second.
 // 0 = left pedal at the bottom.
 export const crankAngle = (cadence: number, seconds: number) => 2 * Math.PI * cadence * seconds
+
+// The pedals' angle on the bike in use right now, carried on across pace changes
+// (the same angle the rider's crankSoFar() gives)
+export const machineCrank = (now = performance.now()) =>
+  machine.crankOffset + crankAngle(machine.cadence, (now - machine.startedAt) / 1000)
 
 // A point on the pedal circle, `angle` round from the bottom. Pedalling forward
 // goes bottom → back → top → front, which (from the side, z forward, y up) is

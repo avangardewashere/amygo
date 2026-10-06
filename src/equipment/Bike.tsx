@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { MathUtils, type Group } from 'three'
 import { machine } from './machineState'
-import { BIKE, crankAngle } from './bikeGeometry'
+import { BIKE, machineCrank } from './bikeGeometry'
 
 const COLORS = {
   frame: '#2b2d31',
@@ -67,7 +67,7 @@ export function Bike({ id }: { id: string }) {
     if (machine.activeId === id) {
       // In use: the same clock as the rider's legs, so pedals and feet agree
       cadence.current = machine.cadence
-      angle.current = crankAngle(machine.cadence, (performance.now() - machine.startedAt) / 1000)
+      angle.current = machineCrank()
     } else {
       // Afterwards: the pedals coast to a stop
       cadence.current = MathUtils.damp(cadence.current, 0, 1.5, delta)

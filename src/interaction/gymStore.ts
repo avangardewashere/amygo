@@ -6,7 +6,7 @@ import type { FurnitureType } from '../build/catalog'
 import { catalogEntry, type StandAt } from '../build/catalog'
 import { SEATED_HIP, placeHips } from '../equipment/benchGeometry'
 import { machine } from '../equipment/machineState'
-import { BIKE } from '../equipment/bikeGeometry'
+import { BIKE, crankAngle } from '../equipment/bikeGeometry'
 import { ROWER } from '../equipment/rowerGeometry'
 import { ADJ, hipsAgainstBackrest } from '../equipment/adjustableBenchGeometry'
 import { CABLE } from '../equipment/cableGeometry'
@@ -39,7 +39,9 @@ export type ExerciseKind =
 type Point = { x: number; z: number }
 
 // An exercise in progress. startedAt drives the animation and the counters,
-// so they always agree. Machines you get on (treadmill) also say where to
+// so they always agree. After a change of pace (walk → run), `pace` says when
+// the current pace began and what had built up before it, so the distance and
+// the pedals carry on from there; startedAt still times the whole session. Machines you get on (treadmill) also say where to
 // stand while using it, and where to step back to afterwards.
 export type Activity = {
   kind: ExerciseKind
@@ -48,6 +50,7 @@ export type Activity = {
   faceYaw: number
   stand?: Point & { y: number }
   returnTo?: Point
+  pace?: { since: number; meters: number; crank: number }
 }
 
 type GymState = {
@@ -165,6 +168,18 @@ export const repProgress = (activity: Activity, now = performance.now()) => repP
 
 export const secondsSince = (activity: Pick<Activity, 'startedAt'>, now = performance.now()) => (now - activity.startedAt) / 1000
 
+// Seconds at the current pace (the whole session, if the pace never changed)
+export const paceSeconds = (activity: Pick<Activity, 'startedAt' | 'pace'>, now = performance.now()) =>
+  (now - (activity.pace?.since ?? activity.startedAt)) / 1000
+
+// Distance covered this session, in meters: what came before this pace, plus this pace so far
+export const metersSoFar = (activity: Pick<Activity, 'kind' | 'startedAt' | 'pace'>, now = performance.now()) =>
+  (activity.pace?.meters ?? 0) + (EXERCISES[activity.kind].speed ?? 0) * paceSeconds(activity, now)
+
+// How far the bike's pedals have turned this session (radians), carried on across pace changes
+export const crankSoFar = (activity: Pick<Activity, 'kind' | 'startedAt' | 'pace'>, now = performance.now()) =>
+  (activity.pace?.crank ?? 0) + crankAngle(EXERCISES[activity.kind].cadence ?? 0, paceSeconds(activity, now))
+
 export const repsDone = (activity: Pick<Activity, 'startedAt'>, now = performance.now()) => repsSince(activity.startedAt, now)
 
 // A point given relative to a piece of furniture (its own left/right and
@@ -204,8 +219,44 @@ function startExercise(kind: ExerciseKind) {
   machine.speed = EXERCISES[kind].speed ?? 0
   machine.cadence = EXERCISES[kind].cadence ?? 0
   machine.backrest = EXERCISES[kind].backrest ?? 0
+  machine.crankOffset = 0
   machine.startedAt = base.startedAt
   store.set({ activity, menu: null })
+}
+
+// The same session at a new pace, from `now`: same machine, same spot, same
+// start time; the distance and pedal angle so far are kept
+export function withNewPace(activity: Activity, kind: ExerciseKind, now: number): Activity {
+  return {
+    ...activity,
+    kind,
+    pace: { since: now, meters: metersSoFar(activity, now), crank: crankSoFar(activity, now) },
+  }
+}
+
+// Exercises you can switch to without getting off: other paces of the same
+// movement on the same machine (walk ↔ run, easy ride ↔ sprint)
+export const otherPaces = (kind: ExerciseKind) =>
+  (Object.keys(EXERCISES) as ExerciseKind[]).filter(
+    (other) =>
+      other !== kind &&
+      EXERCISES[other].machine === EXERCISES[kind].machine &&
+      EXERCISES[other].speed !== undefined &&
+      EXERCISES[kind].speed !== undefined,
+  )
+
+function switchPace(kind: ExerciseKind) {
+  const { activity } = store.get()
+  if (!activity) return
+  const now = performance.now()
+  const next = withNewPace(activity, kind, now)
+  // The machine's moving parts change speed; the pedals carry on from their current angle
+  machine.exercise = kind
+  machine.speed = EXERCISES[kind].speed ?? 0
+  machine.cadence = EXERCISES[kind].cadence ?? 0
+  machine.startedAt = now
+  machine.crankOffset = next.pace!.crank
+  store.set({ activity: next, menu: null })
 }
 
 export function stopExercise() {
@@ -218,11 +269,14 @@ export function stopExercise() {
   store.set({ activity: null, menu: null })
 }
 
-// Where the person goes after getting off a machine they stood (or hung) on:
-// back to the spot they came from, feet on the floor. null = they never moved.
-export function stepOffSpot(activity: Activity | null) {
-  if (!activity?.returnTo) return null
-  return { x: activity.returnTo.x, y: 0, z: activity.returnTo.z }
+// Where the person goes when `previous` gives way to `current`: if the session
+// ended, back to the spot they came from, feet on the floor. null = stay put
+// (the same session carrying on, e.g. at a new pace, or they never moved).
+export function stepOffSpot(previous: Activity | null, current: Activity | null = null) {
+  if (!previous?.returnTo) return null
+  const sameSession = current?.machineId === previous.machineId && current.startedAt === previous.startedAt
+  if (sameSession) return null
+  return { x: previous.returnTo.x, y: 0, z: previous.returnTo.z }
 }
 
 // ---------- Nearness (written by <Player> every frame) ----------
@@ -300,6 +354,10 @@ function drop() {
 
 export type MenuAction = { label: string; run: () => void }
 
+// Mid-exercise: the other paces you can switch to (shown in the exercise popup)
+export const paceActions = (activity: Pick<Activity, 'kind'>): MenuAction[] =>
+  otherPaces(activity.kind).map((kind) => ({ label: EXERCISES[kind].name, run: () => switchPace(kind) }))
+
 // Pass the state the actions depend on (components get it from useGym/useBuild)
 export function menuActions(
   menu: MenuId,
@@ -309,7 +367,8 @@ export function menuActions(
   if (menu === 'dumbbell') {
     return s.holding ? [{ label: 'Drop', run: drop }] : [{ label: 'Pick up', run: pickUp }]
   }
-  if (s.activity) return [{ label: 'Stop', run: stopExercise }]
+  // Mid-exercise: stop, or switch to another pace without getting off
+  if (s.activity) return [{ label: 'Stop', run: stopExercise }, ...paceActions(s.activity)]
   if (s.holding) return [] // hands are full; the menu shows a note instead
   return (Object.keys(EXERCISES) as ExerciseKind[])
     .filter((kind) => EXERCISES[kind].machine === furnitureType)
@@ -332,9 +391,11 @@ export function listenToInteractionKeys() {
     } else if (e.code === 'Escape') {
       if (state.menu) closeMenu()
       else stopExercise()
-    } else if (state.menu && /^Digit[1-9]$/.test(e.code)) {
-      const action = menuActions(state.menu, state, nearFurnitureType())[Number(e.code.slice(5)) - 1]
-      action?.run()
+    } else if (/^Digit[1-9]$/.test(e.code)) {
+      const pick = Number(e.code.slice(5)) - 1
+      // With a menu open, numbers pick from it; mid-exercise, they pick a new pace
+      if (state.menu) menuActions(state.menu, state, nearFurnitureType())[pick]?.run()
+      else if (state.activity) paceActions(state.activity)[pick]?.run()
     }
   }
   window.addEventListener('keydown', onDown)

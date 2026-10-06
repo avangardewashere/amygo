@@ -36,7 +36,7 @@ Same rules as before:
 
 | # | Question | Recommendation |
 | --- | --- | --- |
-| D1 | When you switch pace, do the time and distance **carry on** or **start again**? | Carry on (like a real treadmill) |
+| D1 | When you switch pace, do the time and distance **carry on** or **start again**? | **Decided 2026-10-06: carry on** (your yes to the plan) |
 | D2 | Saved layout lives in **this browser only** (no accounts, nothing sent anywhere). OK? | Yes, this browser only |
 | D3 | For the phone check, open the app via your **Wi-Fi** (dev server on your laptop, phone on the same network) or put it **online** (GitHub repo + free host)? | Wi-Fi first; going online can be its own step later |
 | D4 | The human-looking person needs a **download**: a free CC0 rigged model (the earlier research pointed to Quaternius's models). I'll name the exact file, source and size and ask before downloading. OK to plan on that? | Yes, ask at the start of v5 Block 2 |
@@ -69,6 +69,15 @@ stride or cadence follows smoothly, and the popup keeps counting (per D1).
 | V4B1-T4 | The pedals never jump: their angle is continuous across a switch from Easy to Sprint |
 
 **Visual check:** the belt and the stride speed up smoothly when switching to Run, and the popup's numbers don't reset.
+
+**Status: done** (2026-10-06, on branch `v4-smoother-play`). 42 tests passing (4 new: V4B1-T1..T4), each checked to fail
+when the behaviour it guards is broken. The switch buttons live in the exercise popup (**Run 1** next to **Stop Esc**), and
+number keys pick them, because mid-exercise E means "stop". Two things needed fixing on the way: the pedal angle used to be
+worked out from the start time, so it now carries on from where the pedals were; and the player treated any change to the
+activity as "finished" and stepped off, so a step-off now only happens when the session really ends. Visual check in the
+browser: Walk → Run kept the person on the same spot and the distance carried on (20.56 m → 20.84 m, not reset); Easy ride →
+Sprint with the 1 key kept the feet on the pedals (ankle to pedal 5.1–5.9 cm before and after, which is the shoe sole plus
+the pedal). The optional Android check has not been done.
 
 **Summary:** You can change pace on the treadmill and the bike without getting off, and the time and distance keep counting.
 
