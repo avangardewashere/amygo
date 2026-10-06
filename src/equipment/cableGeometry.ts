@@ -2,7 +2,7 @@
 // machine model, the person's poses and the tests, so the cable always ends in
 // the person's hands. In the machine's own coordinates: the tower stands at
 // the +z end and you face it (+z).
-import type { ExerciseKind } from '../interaction/gymStore'
+import type { ExerciseKind } from '../exercises/catalog'
 import { ELBOW_DROP, HAND_DROP, HIP_Y, SHOULDER_X, SHOULDER_Y } from '../player/proportions'
 import { machine } from './machineState'
 

@@ -229,7 +229,7 @@ height above the pedal); the rest compute their fit from the body. **How it work
 all the moving, hidden; each frame the model's bones copy their directions (`humanRig.ts`). The model's feet hang off its
 root in the file, so they're placed at the shin ends. On load the model's limbs are fitted to our exact lengths and its
 shoulder and hip joints placed on ours (it's slightly asymmetric). **Measured:** worst gap between the model's hands/feet and
-the joint maths across all 21 exercises: 0.00 cm (it was 2.0 to 2.5 cm until the shoulder joints were placed); live in the
+the joint maths across all 17 exercises (an earlier report said 21; the catalog has 17): 0.00 cm (it was 2.0 to 2.5 cm until the shoulder joints were placed); live in the
 browser: 0 cm. **Tests that needed fixing:** T1 crashed the setup instead of failing (now checks the file directly), T3 was
 circular after fitting (now measures the model as made). **Seated poses (from v4 Block 3):** a shared `SEAT_TO_HIP` (8 cm)
 for every seat; the 45 cm benches sit a little higher as the knees end up below the hips. Measured sink into the seat: chest

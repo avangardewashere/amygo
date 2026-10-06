@@ -1,3 +1,4 @@
+import { MACHINE_NAMES, type MachineType, type StandAt } from '../exercises/catalog'
 import type { ComponentType } from 'react'
 import { DumbbellRack, RACK_DEPTH, RACK_WIDTH } from '../equipment/DumbbellRack'
 import { DECK_HEIGHT, TREADMILL_DEPTH, TREADMILL_WIDTH, Treadmill } from '../equipment/Treadmill'
@@ -18,11 +19,10 @@ import { SQUAT } from '../equipment/squatGeometry'
 import { CABLE_DEPTH, CABLE_WIDTH, CableMachine } from '../equipment/CableMachine'
 import { PULLUP_DEPTH, PULLUP_WIDTH, PullupStation } from '../equipment/PullupStation'
 
-// Where the person goes to use a machine they get on (or into), in the
-// machine's own coordinates: z along its length, y the height of the
-// person's feet-origin. Machines without one are used from beside them.
-// (An exercise can override this, e.g. sitting on the end of the bench.)
-export type StandAt = { z: number; y: number }
+// Where the person goes to use a machine they get on (see exercises/catalog.ts).
+// Machines without one are used from beside them. (An exercise can override
+// this, e.g. sitting on the end of the bench.)
+export type { StandAt }
 
 type CatalogEntry = {
   name: string
@@ -39,7 +39,7 @@ type CatalogEntry = {
 // (Which exercises a piece offers lives in EXERCISES in gymStore.ts.)
 export const CATALOG = {
   dumbbellRack: {
-    name: 'Dumbbell rack',
+    name: MACHINE_NAMES.dumbbellRack,
     width: RACK_WIDTH,
     depth: RACK_DEPTH,
     Model: DumbbellRack,
@@ -47,7 +47,7 @@ export const CATALOG = {
     tagHeight: 1.15,
   },
   treadmill: {
-    name: 'Treadmill',
+    name: MACHINE_NAMES.treadmill,
     width: TREADMILL_WIDTH,
     depth: TREADMILL_DEPTH,
     Model: Treadmill,
@@ -57,7 +57,7 @@ export const CATALOG = {
     standAt: { z: -0.15, y: DECK_HEIGHT },
   },
   legPress: {
-    name: 'Leg press',
+    name: MACHINE_NAMES.legPress,
     width: LEG_PRESS_WIDTH,
     depth: LEG_PRESS_DEPTH,
     Model: LegPress,
@@ -67,7 +67,7 @@ export const CATALOG = {
     standAt: { z: PRESS.hipZ, y: PRESS.hipY - HIP_Y },
   },
   bench: {
-    name: 'Bench',
+    name: MACHINE_NAMES.bench,
     width: BENCH_WIDTH,
     depth: BENCH_DEPTH,
     Model: Bench,
@@ -77,7 +77,7 @@ export const CATALOG = {
     standAt: placeHips(LYING_HIP),
   },
   chestFly: {
-    name: 'Chest fly machine',
+    name: MACHINE_NAMES.chestFly,
     width: CHEST_FLY_WIDTH,
     depth: CHEST_FLY_DEPTH,
     Model: ChestFly,
@@ -86,7 +86,7 @@ export const CATALOG = {
     standAt: placeHips({ y: FLY.hipY, z: FLY.hipZ }),
   },
   bike: {
-    name: 'Stationary bike',
+    name: MACHINE_NAMES.bike,
     width: BIKE_WIDTH,
     depth: BIKE_DEPTH,
     Model: Bike,
@@ -96,7 +96,7 @@ export const CATALOG = {
     standAt: placeHips({ y: BIKE.hipY, z: BIKE.hipZ }),
   },
   rower: {
-    name: 'Rowing machine',
+    name: MACHINE_NAMES.rower,
     width: ROWER_WIDTH,
     depth: ROWER_DEPTH,
     Model: Rower,
@@ -106,7 +106,7 @@ export const CATALOG = {
     standAt: placeHips({ y: ROWER.hipY, z: 0 }),
   },
   adjustableBench: {
-    name: 'Adjustable bench',
+    name: MACHINE_NAMES.adjustableBench,
     width: ADJ_BENCH_WIDTH,
     depth: ADJ_BENCH_DEPTH,
     Model: AdjustableBench,
@@ -115,7 +115,7 @@ export const CATALOG = {
     // No standAt here: each exercise sets the backrest, and where you sit against it
   },
   squatRack: {
-    name: 'Squat rack',
+    name: MACHINE_NAMES.squatRack,
     width: SQUAT_RACK_WIDTH,
     depth: SQUAT_RACK_DEPTH,
     Model: SquatRack,
@@ -125,7 +125,7 @@ export const CATALOG = {
     standAt: { z: SQUAT.standZ, y: 0 },
   },
   cableMachine: {
-    name: 'Cable machine',
+    name: MACHINE_NAMES.cableMachine,
     width: CABLE_WIDTH,
     depth: CABLE_DEPTH,
     Model: CableMachine,
@@ -134,16 +134,16 @@ export const CATALOG = {
     // No standAt here: pushdowns stand at the tower, rows sit on the seat
   },
   pullupBar: {
-    name: 'Pull-up bar',
+    name: MACHINE_NAMES.pullupBar,
     width: PULLUP_WIDTH,
     depth: PULLUP_DEPTH,
     Model: PullupStation,
     menuSubtitle: 'Pick an exercise',
     tagHeight: 2.75,
   },
-} satisfies Record<string, CatalogEntry>
+} satisfies Record<MachineType, CatalogEntry>
 
-export type FurnitureType = keyof typeof CATALOG
+export type FurnitureType = MachineType
 
 // Look up any piece's details with the optional fields typed (e.g. standAt)
 export const catalogEntry = (type: FurnitureType): CatalogEntry => CATALOG[type]

@@ -141,6 +141,20 @@ also offers the other pace (Run, Sprint), the same as the in-gym menu.
 **Visual check:** start three different exercises from the list (one dumbbell, one machine you sit on, one you stand at),
 switch to Home each time: the person is on the right machine, and the list's count matches the popup's.
 
+**Status: done** (2026-10-07, on branch `v6-app-shell`). 72 tests passing (6 new: V6B2-T1..T6), each checked to fail when
+the behaviour it guards is broken. **One change from D3:** starting from the list doesn't make the person walk there. The
+list is on the Exercises tab, where the gym is paused and not drawn, so a walk would happen unseen (and frozen); instead the
+person is put straight onto the nearest machine of that kind (D3's own fallback, "appear there") and the exercise starts at
+once, so the count runs on the list right away. The catalog now lives in `src/exercises/catalog.ts` (machine names in list
+order, kinds, the table); `gymStore.ts` passes it on so existing imports work, and the build catalog takes its names from
+it. T6 follows every real import from the catalog and the list and finds no three.js and no components. **Found and fixed on
+the way:** a Block 1 test (T4) failed now and then: exactly 30 s after a fractional-millisecond start can come out a hair
+under (0:29), and 30 s of walking is exactly 0.045 km, which rounds either way; it now reads half a second later, away from
+both edges (passed 5 runs out of 5). Checked in the browser (phone size): the list shows all 17 exercises under 11
+machines; Start on Bicep curls showed "Doing bicep curls · 2 reps done" on the list with the gym hidden; Start on Easy ride
+offered Sprint and Finish, and on Home the person was on the bike, cycling, with the header counting. The optional Android
+check has not been done.
+
 **Summary:** The Exercises tab lists everything the gym can do, and starting from it puts the person on the right machine
 doing it, with the count shown on both tabs.
 

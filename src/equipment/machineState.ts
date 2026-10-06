@@ -4,7 +4,7 @@
 // exercise starts or stops, read by the machine models every frame. Kept in
 // its own tiny file so models don't import the game state (that would make
 // the imports go round in a circle).
-import type { ExerciseKind } from '../interaction/gymStore'
+import type { ExerciseKind } from '../exercises/catalog'
 
 export const machine = {
   activeId: null as string | null,

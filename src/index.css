@@ -414,3 +414,102 @@ body,
 .perf-readout strong {
   font-size: 16px;
 }
+
+/* ---------- Exercises page ---------- */
+
+.now-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 12px 0 18px;
+  padding: 12px 14px;
+  border: 1px solid rgb(228 87 46 / 0.6);
+  border-radius: 14px;
+  background: rgb(228 87 46 / 0.08);
+}
+
+.now-card strong {
+  display: block;
+}
+
+.now-card span {
+  font-size: 0.85rem;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums; /* digits keep the same width as the count changes */
+}
+
+.now-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.machine-group {
+  margin-top: 16px;
+}
+
+.machine-group h3 {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.machine-group.is-unavailable {
+  opacity: 0.45;
+}
+
+.machine-group ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 12px;
+}
+
+.machine-group li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 8px 6px 14px;
+}
+
+.machine-group li + li {
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.list-button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.12);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.list-button:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.2);
+}
+
+.list-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.list-button.is-primary {
+  background: #e4572e;
+  color: #fff;
+}
+
+.doing-tag {
+  padding: 0 12px;
+  color: #e4572e;
+  font-weight: 700;
+}

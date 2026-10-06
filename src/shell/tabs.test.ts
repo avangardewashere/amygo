@@ -84,11 +84,15 @@ describe('app shell', () => {
   it('V6B1-T4: thirty seconds on another tab mid-walk adds thirty seconds and the matching distance', () => {
     const walk = start('treadmill-1', 'treadmill', 'walk', 'Walk')
     openTab('exercises')
-    // Nothing is drawn meanwhile, but the counters come from the clock
-    const later = walk.startedAt + 30_000
+    // Nothing is drawn meanwhile, but the counters come from the clock.
+    // (Read half a second past the 30 s mark, away from rounding edges: start
+    // times are fractions of a millisecond, so exactly 30 s can come out a hair
+    // under and show 0:29; and 30 s of walking is exactly 0.045 km, which
+    // rounds either way. At 30.5 s it's 0.04575 km.)
+    const later = walk.startedAt + 30_500
     openTab('home')
     expect(getGym().activity).toBe(walk)
-    expect(progressText(getGym().activity!, later)).toBe(`${((1.5 * 30) / 1000).toFixed(2)} km · 0:30`)
+    expect(progressText(getGym().activity!, later)).toBe('0.05 km · 0:30')
   })
 
   it('V6B1-T6 (found in the browser): a clock read before the start shows the start, never a negative count', () => {

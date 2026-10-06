@@ -3,39 +3,23 @@ import { createStore } from '../lib/store'
 import { ROOM } from '../scene/dimensions'
 import { getBuild, type Furniture } from '../build/buildStore'
 import type { FurnitureType } from '../build/catalog'
-import { catalogEntry, type StandAt } from '../build/catalog'
-import { SEATED_HIP, placeHips } from '../equipment/benchGeometry'
+import { catalogEntry } from '../build/catalog'
+import { EXERCISES, type ExerciseKind } from '../exercises/catalog'
+import { nearestMachine } from '../exercises/list'
 import { machine } from '../equipment/machineState'
-import { BIKE, crankAngle } from '../equipment/bikeGeometry'
-import { ROWER } from '../equipment/rowerGeometry'
-import { ADJ, hipsAgainstBackrest } from '../equipment/adjustableBenchGeometry'
-import { CABLE } from '../equipment/cableGeometry'
-import { PULLUP } from '../equipment/pullupGeometry'
+import { crankAngle } from '../equipment/bikeGeometry'
 import { repPhase, repsSince } from './reps'
 import { onHome } from '../shell/tabStore'
 
 // Game state that both the 3D scene and the on-screen menus need to see.
 
+// The exercises themselves live in exercises/catalog.ts (no 3D code there);
+// passed on from here so existing imports keep working
+export { EXERCISES }
+export type { ExerciseKind }
+
 export type FloorSpot = { x: number; z: number; rotationY: number }
 export type MenuId = 'dumbbell' | 'furniture'
-export type ExerciseKind =
-  | 'curl'
-  | 'lateral'
-  | 'walk'
-  | 'run'
-  | 'legPress'
-  | 'benchPress'
-  | 'shoulderPress'
-  | 'chestFly'
-  | 'ride'
-  | 'sprint'
-  | 'row'
-  | 'inclinePress'
-  | 'seatedCurl'
-  | 'squat'
-  | 'pushdown'
-  | 'cableRow'
-  | 'pullup'
 
 type Point = { x: number; z: number }
 
@@ -91,80 +75,6 @@ const WALL_GAP = 0.2
 
 // ---------- Exercises ----------
 
-type Exercise = {
-  machine: FurnitureType // which furniture offers it
-  name: string // label in the menu
-  doing: string // headline in the popup while doing it
-  speed?: number // m/s: treadmill belt speed, or how fast you'd be cycling
-  stride?: number // treadmill: how hard the legs work (1 = normal walk)
-  cadence?: number // bike: pedal turns per second
-  strokes?: boolean // rower: count strokes and show a pace per 500 m
-  backrest?: number // adjustable bench: backrest angle up from flat (radians)
-  // Dumbbells in both hands, and how they're held: bar side to side ('across')
-  // or pointing ahead ('forward')
-  weights?: 'across' | 'forward'
-  standAt?: StandAt // overrides where the machine puts you
-}
-
-export const EXERCISES: Record<ExerciseKind, Exercise> = {
-  curl: { machine: 'dumbbellRack', name: 'Bicep curls', doing: 'Doing bicep curls', weights: 'across' },
-  lateral: {
-    machine: 'dumbbellRack',
-    name: 'Lateral raises (side fly)',
-    doing: 'Doing lateral raises',
-    weights: 'forward',
-  },
-  walk: { machine: 'treadmill', name: 'Walk', doing: 'Walking', speed: 1.5, stride: 0.8 },
-  run: { machine: 'treadmill', name: 'Run', doing: 'Running', speed: 3, stride: 1.5 },
-  legPress: { machine: 'legPress', name: 'Leg press', doing: 'Doing leg presses' },
-  benchPress: { machine: 'bench', name: 'Dumbbell bench press', doing: 'Doing bench presses', weights: 'across' },
-  shoulderPress: {
-    machine: 'bench',
-    name: 'Seated shoulder press',
-    doing: 'Doing shoulder presses',
-    weights: 'across',
-    standAt: placeHips(SEATED_HIP), // sitting on the end of the bench instead of lying
-  },
-  chestFly: { machine: 'chestFly', name: 'Chest fly', doing: 'Doing chest flies' },
-  ride: { machine: 'bike', name: 'Easy ride', doing: 'Cycling', speed: 20 / 3.6, cadence: BIKE.cadence.easy },
-  sprint: { machine: 'bike', name: 'Sprint', doing: 'Sprinting', speed: 32 / 3.6, cadence: BIKE.cadence.sprint },
-  row: { machine: 'rower', name: 'Row', doing: 'Rowing', speed: ROWER.speed, strokes: true },
-  inclinePress: {
-    machine: 'adjustableBench',
-    name: 'Incline dumbbell press',
-    doing: 'Doing incline presses',
-    weights: 'across',
-    backrest: ADJ.angles.incline,
-    standAt: placeHips(hipsAgainstBackrest(ADJ.angles.incline)),
-  },
-  seatedCurl: {
-    machine: 'adjustableBench',
-    name: 'Seated curls',
-    doing: 'Doing seated curls',
-    weights: 'across',
-    backrest: ADJ.angles.upright,
-    standAt: placeHips(hipsAgainstBackrest(ADJ.angles.upright)),
-  },
-  squat: { machine: 'squatRack', name: 'Back squat', doing: 'Doing back squats' },
-  pushdown: {
-    machine: 'cableMachine',
-    name: 'Tricep pushdowns',
-    doing: 'Doing tricep pushdowns',
-    standAt: { z: CABLE.pushdown.standZ, y: 0 }, // standing at the tower
-  },
-  cableRow: {
-    machine: 'cableMachine',
-    name: 'Cable rows',
-    doing: 'Doing cable rows',
-    standAt: placeHips({ y: CABLE.row.hipY, z: CABLE.row.hipZ }), // on the low seat
-  },
-  pullup: {
-    machine: 'pullupBar',
-    name: 'Pull-ups',
-    doing: 'Doing pull-ups',
-    standAt: { z: PULLUP.standZ, y: 0 }, // under the bar; the pose lifts you off the floor
-  },
-}
 
 // Exercises done with dumbbells in your hands
 export const isArmExercise = (kind: ExerciseKind) => EXERCISES[kind].weights !== undefined
@@ -212,11 +122,20 @@ function runMachine(activity: Activity) {
   machine.startedAt = startedAt
 }
 
-function startExercise(kind: ExerciseKind) {
+// How far in front of a machine you use from beside it (the dumbbell rack)
+// the person is put when started from the Exercises list
+const IN_FRONT = 0.45
+
+// Start an exercise on the machine in reach. From the Exercises list
+// (placed), the gym isn't on screen, so the person is put straight onto the
+// machine and the exercise begins at once, instead of stepping on.
+//   returnTo: where to step back to afterwards (default: where they are)
+function startExercise(kind: ExerciseKind, { placed = false, returnTo }: { placed?: boolean; returnTo?: Point } = {}) {
   const { nearFurnitureId, holding } = store.get()
   const piece = getBuild().items.find((item) => item.id === nearFurnitureId)
   if (!piece || holding) return
   const base = { kind, machineId: piece.id, session: ++sessions, startedAt: performance.now() }
+  const back = returnTo ?? { x: playerPose.x, z: playerPose.z }
 
   let activity: Activity
   const standAt = EXERCISES[kind].standAt ?? catalogEntry(piece.type).standAt
@@ -225,11 +144,17 @@ function startExercise(kind: ExerciseKind) {
     const spot = fromFurniture(piece, 0, standAt.z)
     activity = {
       ...base,
-      arrived: false, // step on first; the exercise begins on arrival (see stepOnto)
+      arrived: placed, // step on first; the exercise begins on arrival (see stepOnto)
       faceYaw: -piece.turns * (Math.PI / 2),
       stand: { ...spot, y: standAt.y },
-      returnTo: { x: playerPose.x, z: playerPose.z },
+      returnTo: back,
     }
+    if (placed) runMachine(activity)
+  } else if (placed) {
+    // Put just in front of the machine, back to it, the way people step away from a rack to lift
+    const spot = fromFurniture(piece, 0, catalogEntry(piece.type).depth / 2 + IN_FRONT)
+    activity = { ...base, arrived: true, faceYaw: -piece.turns * (Math.PI / 2), stand: { ...spot, y: 0 }, returnTo: back }
+    runMachine(activity)
   } else {
     // Turn your back to the rack, the way people step away from it to lift
     activity = { ...base, arrived: true, faceYaw: Math.atan2(playerPose.x - piece.x, playerPose.z - piece.z) }
@@ -237,6 +162,25 @@ function startExercise(kind: ExerciseKind) {
   }
   store.set({ activity, menu: null })
 }
+
+// Start an exercise from the Exercises list: on the nearest machine of its
+// kind, with the person put straight onto it. Switching from another
+// exercise keeps where they first came from. Returns false if it can't start
+// (no such machine in the gym, or hands full).
+export function startFromList(kind: ExerciseKind) {
+  const { holding, activity } = store.get()
+  if (holding) return false
+  const piece = nearestMachine(EXERCISES[kind].machine, getBuild().items, playerPose)
+  if (!piece) return false
+  const back = activity?.returnTo
+  stopExercise()
+  store.set({ nearFurnitureId: piece.id })
+  startExercise(kind, { placed: true, returnTo: back })
+  return true
+}
+
+// Finishing from the list is exactly the in-gym Stop
+export const finishFromList = () => stopExercise()
 
 // How close (meters) the person must be to a machine's spot to count as on it
 export const ARRIVE_DISTANCE = 0.02
