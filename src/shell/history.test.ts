@@ -308,9 +308,11 @@ describe('History by exercise', () => {
   it('V7B3-T5: Start on a history page starts that exercise exactly as the list\'s Start does', async () => {
     // Both buttons call the list's own start (buttons can't be clicked without a browser, so read what they call)
     expect(sources['/src/shell/ExercisesPage.tsx']).toMatch(/onClick=\{\(\) => startFromList\(kind\)\}/)
-    expect(sources['/src/shell/ExerciseHistoryPage.tsx']).toMatch(
-      /history-start"[\s\S]*?onClick=\{\(\) => \{[^}]*?\n\s*startFromList\(kind\)\n/,
-    )
+    // (just the page's Start button, from its class to its closing tag; any line endings, as git may write either)
+    const pageSource = sources['/src/shell/ExerciseHistoryPage.tsx']
+    const startAt = pageSource.indexOf('history-start')
+    const startButton = pageSource.slice(startAt, pageSource.indexOf('</button>', startAt))
+    expect(startButton).toMatch(/onClick=\{[\s\S]*\bstartFromList\(kind\)/)
     // …and with a history page open, it ends in the same exercise as from the list, the page staying open
     for (const kind of ['curl', 'legPress', 'walk'] as ExerciseKind[]) {
       const fromPage = await openApp()
