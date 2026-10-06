@@ -12,6 +12,11 @@ export const BENCH = {
 // half the body's thickness, toward the foot end so the head stays on the bench
 export const LYING_HIP = { y: BENCH.topY + TORSO_RADIUS, z: 0.3 }
 
+// Lying on the bench, the legs straddle it like a real lifter's: each foot is
+// planted this far out from its hip (sideways) and forward, on the floor
+// beside the bench, so no leg rests on the pad
+export const STRADDLE = { out: 0.25, forward: 0.15 }
+
 // Sitting upright on the foot end (shoulder press)
 export const SEATED_HIP = { y: BENCH.topY + 0.05, z: 0.42 }
 

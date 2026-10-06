@@ -4,7 +4,7 @@
 import { Euler, Matrix4, Vector3 } from 'three'
 import type { Activity } from '../interaction/gymStore'
 import { PRESS, pressDistance } from '../equipment/legPressGeometry'
-import { LYING_HIP, SEATED_HIP } from '../equipment/benchGeometry'
+import { LYING_HIP, SEATED_HIP, STRADDLE } from '../equipment/benchGeometry'
 import { FLY, flyAngle } from '../equipment/chestFlyGeometry'
 import { BIKE, crankAngle, footOnPedal } from '../equipment/bikeGeometry'
 import { ROWER, rowerPosition } from '../equipment/rowerGeometry'
@@ -35,7 +35,9 @@ export const arm = (pose: Partial<ArmPose>): ArmPose => ({
 // The whole body for one moment of an exercise:
 //   lean: how far the body tips at the hips: positive forward (bike), negative
 //         back (leg press; −π/2 = lying flat on the bench)
-//   foot: where each foot goes, relative to the hips (z forward, y up); null = walking legs
+//   foot: where each foot goes, relative to its hip joint (z forward, y up, and
+//         optionally x: out to the side, which swings the leg sideways too);
+//         null = walking legs
 //   arms: the pose of each arm
 //   follow: hands or feet must keep up with a moving machine part (pedals,
 //           a sled, handles), so joints track their targets closely instead
@@ -46,9 +48,10 @@ export const arm = (pose: Partial<ArmPose>): ArmPose => ({
 //   flatFeet: keep the shoes flat on the floor however the shins tip
 // side is +1 for the left, −1 for the right
 type Spot = { z: number; y: number }
+type FootSpot = Spot & { x?: number }
 export type BodyPose = {
   lean: number
-  foot: ((side: number) => Spot) | null
+  foot: ((side: number) => FootSpot) | null
   arms: (side: number) => ArmPose
   follow?: boolean
   shift?: number
@@ -97,8 +100,13 @@ export function exercisePose(
       }
     }
     case 'benchPress':
-      // Lying flat on your back, feet on the floor, pressing at the ceiling
-      return { lean: -Math.PI / 2, foot: () => ({ z: 0.35, y: SHOE_Y - LYING_HIP.y }), arms: pressArms(t) }
+      // Lying flat on your back, pressing at the ceiling, legs straddling the
+      // bench with the feet planted wide on the floor either side of it
+      return {
+        lean: -Math.PI / 2,
+        foot: (side) => ({ x: side * STRADDLE.out, z: STRADDLE.forward, y: SHOE_Y - LYING_HIP.y }),
+        arms: pressArms(t),
+      }
     case 'inclinePress': {
       // Back on the 45° backrest, so the same press goes up and forward
       const { incline } = ADJ.angles
@@ -276,35 +284,40 @@ export function armTo3D(
   hand: { x: number; y: number; z: number },
   hint = { out: 0.5, back: 0 },
 ): ArmPose {
-  const target = new Vector3(hand.x, hand.y, hand.z)
-  const distance = Math.min(target.length(), ELBOW_DROP + HAND_DROP - 0.001)
-  const toHand = target.clone().normalize()
-  // The elbow circle: its middle sits `along` the line to the hand, `radius` out from it
-  const along = (distance ** 2 + ELBOW_DROP ** 2 - HAND_DROP ** 2) / (2 * distance)
-  const radius = Math.sqrt(Math.max(ELBOW_DROP ** 2 - along ** 2, 0))
   const toward = new Vector3(side * hint.out, -1, -hint.back)
-  const sideways = toward.sub(toHand.clone().multiplyScalar(toward.dot(toHand))).normalize()
-  const elbow = toHand.clone().multiplyScalar(along).add(sideways.multiplyScalar(radius))
-  const upper = elbow.clone().normalize()
-  const fore = toHand.clone().multiplyScalar(distance).sub(elbow).normalize()
+  const { top, bend } = twoBone3D(new Vector3(hand.x, hand.y, hand.z), ELBOW_DROP, HAND_DROP, toward, 1)
+  return arm({ shoulderX: top.x, shoulderY: top.y, shoulderZ: top.z, elbowX: bend })
+}
 
-  // The shoulder's own axes: the arm hangs along its −y, and the elbow (a
-  // hinge about its x) folds the forearm within its y–z plane
+// Two-part limb in 3D (upper arm + forearm, or thigh + shin): the joint angles
+// that put its end on `target` (relative to the top joint, in the body's own
+// coordinates). The middle joint sits as far toward `toward` as it can.
+//   fold +1: the lower part folds toward the front of the limb (an elbow)
+//   fold −1: it folds toward the back (a knee)
+// Returns the top joint's rotation and the middle joint's hinge angle.
+function twoBone3D(target: Vector3, first: number, second: number, toward: Vector3, fold: 1 | -1) {
+  const distance = Math.min(target.length(), first + second - 0.001)
+  const toEnd = target.clone().normalize()
+  // The middle joint's circle: its middle sits `along` the line to the end, `radius` out from it
+  const along = (distance ** 2 + first ** 2 - second ** 2) / (2 * distance)
+  const radius = Math.sqrt(Math.max(first ** 2 - along ** 2, 0))
+  const sideways = toward.clone().sub(toEnd.clone().multiplyScalar(toward.dot(toEnd))).normalize()
+  const middle = toEnd.clone().multiplyScalar(along).add(sideways.multiplyScalar(radius))
+  const upper = middle.clone().normalize()
+  const lower = toEnd.clone().multiplyScalar(distance).sub(middle).normalize()
+
+  // The top joint's own axes: the limb hangs along its −y, and the middle
+  // joint (a hinge about its x) folds the lower part within its y–z plane
   const y = upper.clone().negate()
-  let x = new Vector3().crossVectors(y, fore).normalize()
+  let x = new Vector3().crossVectors(y, lower).normalize()
   let z = new Vector3().crossVectors(x, y)
-  // Fold the elbow the natural way (forearm toward the front of the arm)
-  if (fore.dot(z) < 0) {
+  // Fold the natural way for this joint
+  if (lower.dot(z) * fold < 0) {
     x = x.negate()
     z = new Vector3().crossVectors(x, y)
   }
-  const shoulder = new Euler().setFromRotationMatrix(new Matrix4().makeBasis(x, y, z))
-  return arm({
-    shoulderX: shoulder.x,
-    shoulderY: shoulder.y,
-    shoulderZ: shoulder.z,
-    elbowX: Math.atan2(-fore.dot(z), -fore.dot(y)),
-  })
+  const top = new Euler().setFromRotationMatrix(new Matrix4().makeBasis(x, y, z))
+  return { top, bend: Math.atan2(-lower.dot(z), -lower.dot(y)) }
 }
 
 // ---------- Leg maths ----------
@@ -354,4 +367,21 @@ export const reachWithHand = (z: number, y: number) => twoBoneReach(z, y, ELBOW_
 export function legAngles(foot: { z: number; y: number }, lean: number) {
   const { thigh, shin } = reachWithFoot(foot.z, foot.y)
   return { hip: wrap(thigh - lean), knee: wrap(shin - thigh) }
+}
+
+// Every leg joint for a planted foot. Feet straight ahead of the hip use the
+// side-view maths above (no sideways swing). A foot placed out to the side
+// (x) is reached in 3D instead: the hip also swings the leg out, and the knee
+// points out and up, the way you'd straddle a bench.
+export function legJoints(foot: FootSpot, lean: number, side: number) {
+  if (foot.x === undefined) {
+    const { hip, knee } = legAngles(foot, lean)
+    return { hipX: hip, hipY: 0, hipZ: 0, knee }
+  }
+  // The foot measured in the leaning body's own directions
+  const up = foot.y * Math.cos(lean) + foot.z * Math.sin(lean)
+  const forward = -foot.y * Math.sin(lean) + foot.z * Math.cos(lean)
+  const knees = new Vector3(side, 0, 1) // knees out to the side and toward the chest's front
+  const { top, bend } = twoBone3D(new Vector3(foot.x, up, forward), KNEE_DROP, FOOT_DROP, knees, -1)
+  return { hipX: top.x, hipY: top.y, hipZ: top.z, knee: bend }
 }

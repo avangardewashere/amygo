@@ -2,7 +2,7 @@ import { useRef, type ReactNode, type RefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { MathUtils, type Group } from 'three'
 import { paceSeconds, repProgress, type Activity } from '../interaction/gymStore'
-import { arm, exercisePose, legAngles } from './poseMath'
+import { arm, exercisePose, legJoints } from './poseMath'
 import {
   ELBOW_DROP,
   FOOT_DROP,
@@ -87,14 +87,17 @@ export function Person({ gait, hands = {}, activity = null }: PersonProps) {
     // Feet planted somewhere (sled, floor while seated or lying): bend hips and
     // knees to reach (see poseMath.ts). Otherwise: walking legs.
     ;[1, -1].forEach((side, i) => {
-      const planted = pose?.foot ? legAngles(pose.foot(side), lean.rotation.x) : null
+      const planted = pose?.foot ? legJoints(pose.foot(side), lean.rotation.x, side) : null
       const legSwing = side * swing // legs opposite to each other
-      const hipTarget = planted ? planted.hip : legSwing
+      const hipTarget = planted ? planted.hipX : legSwing
       // Walking: the knee bends while that leg is behind you, like a real stride
       const kneeTarget = planted ? planted.knee : Math.max(legSwing, 0) * WALK_KNEE
       const hip = hips[i].current!
       const knee = knees[i].current!
       hip.rotation.x = ease(hip.rotation.x, hipTarget)
+      // Swinging the leg out to the side (straddling a bench); 0 otherwise
+      hip.rotation.y = ease(hip.rotation.y, planted?.hipY ?? 0)
+      hip.rotation.z = ease(hip.rotation.z, planted?.hipZ ?? 0)
       knee.rotation.x = ease(knee.rotation.x, kneeTarget)
       // Flat feet: tip the shoe back by everything above it, so it stays level
       const ankle = ankles[i].current!

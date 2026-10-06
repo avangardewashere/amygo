@@ -3,7 +3,7 @@
 // same measurements from proportions.ts), so tests can check that hands meet
 // handles and feet meet pedals without drawing anything.
 import { Object3D, Vector3 } from 'three'
-import { legAngles, type BodyPose } from './poseMath'
+import { legJoints, type BodyPose } from './poseMath'
 import {
   ELBOW_DROP,
   FOOT_DROP,
@@ -54,9 +54,9 @@ export function limbEnds(pose: BodyPose, origin: Origin = {}): LimbEnds {
 
   const kneeJoints: Object3D[] = []
   const feet = [1, -1].map((side) => {
-    const legs = pose.foot ? legAngles(pose.foot(side), pose.lean) : { hip: 0, knee: 0 }
+    const legs = pose.foot ? legJoints(pose.foot(side), pose.lean, side) : { hipX: 0, hipY: 0, hipZ: 0, knee: 0 }
     const hip = joint(body, side * HIP_X, HIP_Y)
-    hip.rotation.x = legs.hip
+    hip.rotation.set(legs.hipX, legs.hipY, legs.hipZ)
     const knee = joint(hip, 0, -KNEE_DROP)
     knee.rotation.x = legs.knee
     kneeJoints.push(knee)

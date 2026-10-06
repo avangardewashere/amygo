@@ -141,6 +141,16 @@ feet planted wide on the floor either side of the bench. Nothing passes through 
 
 **Visual check:** from the side and from above, no leg passes through the bench pad.
 
+**Status: done** (2026-10-06, on branch `v4-smoother-play`). 49 tests passing (3 new: V4B3-T1..T3), each checked to fail
+when the behaviour it guards is broken; putting the old legs back fails T1, so the test really sees the original overlap.
+The arms' 3D reach became a shared two-part-limb function, and legs use it too (the knee folds the other way from an elbow);
+all earlier hand checks still pass, so the arms are unchanged. Only a foot given a sideways position uses the 3D leg; every
+other pose keeps the side-view leg maths. Measured in the browser: each foot planted 35 cm out from the bench's middle (the
+pad's edge is at 15 cm), on the floor. **Found while checking the seated poses** (shoulder press, adjustable bench): their
+thighs sink about 3.5 cm into the seat, and the shorts (a plain cylinder) deeper. That's the capsule body having nothing
+shaped like a seat to sit on, not a pose error, so it moves to v5 Block 2 (the human-looking person has real proportions).
+The optional Android check has not been done. **This completes v4.**
+
 **Summary:** Lying on the flat bench, the person now straddles it with their feet wide, so no leg passes through the pad.
 That finishes v4.
 
@@ -188,6 +198,8 @@ They move exactly like today's person on every machine, because they're driven b
 - **The classic person stays** behind the existing look switch, as before with the Fitness Character. If the new model
   looks wrong somewhere, you can switch back in one line.
 - The model is checked for size, since phones pay for every triangle (feeds into Block 3).
+- **Also check seated poses** (found in v4 Block 3): with the capsule body, seated thighs sink ~3.5 cm into the seat and the
+  shorts deeper. With the new model's real seat shape, set the seated hip heights so it sits on the pads, not in them.
 
 **Tests:**
 
