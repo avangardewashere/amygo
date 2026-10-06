@@ -8,6 +8,7 @@ import {
   ELBOW_DROP,
   FOOT_DROP,
   HAND_DROP,
+  HEAD_Y,
   HIP_X,
   HIP_Y,
   KNEE_DROP,
@@ -25,6 +26,7 @@ export type LimbEnds = {
   knees: [Vector3, Vector3]
   elbows: [Vector3, Vector3]
   spine: { hips: Vector3; shoulders: Vector3 }
+  head: Vector3 // the middle of the head
 }
 
 const joint = (parent: Object3D, x: number, y: number, z = 0) => {
@@ -48,6 +50,7 @@ export function limbEnds(pose: BodyPose, origin: Origin = {}): LimbEnds {
   posture.rotation.x = pose.lean
   const body = joint(posture, 0, -HIP_Y)
   const neck = joint(body, 0, SHOULDER_Y)
+  const head = joint(body, 0, HEAD_Y)
 
   const kneeJoints: Object3D[] = []
   const feet = [1, -1].map((side) => {
@@ -79,5 +82,6 @@ export function limbEnds(pose: BodyPose, origin: Origin = {}): LimbEnds {
     knees: [where(kneeJoints[0]), where(kneeJoints[1])],
     elbows: [where(elbowJoints[0]), where(elbowJoints[1])],
     spine: { hips: where(posture), shoulders: where(neck) },
+    head: where(head),
   }
 }

@@ -16,6 +16,7 @@ import {
   playerPose,
   setNear,
   setNearFurniture,
+  stepOffSpot,
   stopExercise,
   useGym,
   type Activity,
@@ -106,9 +107,8 @@ export function Player() {
 
     // Just finished using a machine you stood on: step back off to where you were
     const previous = lastActivity.current
-    if (previous?.returnTo && previous !== current) {
-      player.position.set(previous.returnTo.x, 0, previous.returnTo.z)
-    }
+    const stepOff = previous !== current ? stepOffSpot(previous) : null
+    if (stepOff) player.position.set(stepOff.x, stepOff.y, stepOff.z)
     lastActivity.current = current
 
     if (current?.stand) {

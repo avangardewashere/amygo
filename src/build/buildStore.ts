@@ -44,6 +44,8 @@ const store = createStore<BuildState>({
     { id: 'squatrack-1', type: 'squatRack', x: 0.5, z: -5.4, turns: 2 },
     // Right wall, back corner; turned so you face the tower (and the wall) to use it
     { id: 'cable-1', type: 'cableMachine', x: 9, z: -4.25, turns: 3 },
+    // Left back corner, tower against the back wall
+    { id: 'pullup-1', type: 'pullupBar', x: -8.5, z: -5.25, turns: 2 },
   ],
   selectedId: null,
   drag: null,

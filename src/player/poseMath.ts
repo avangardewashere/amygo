@@ -11,6 +11,7 @@ import { ROWER, rowerPosition } from '../equipment/rowerGeometry'
 import { ADJ, hipsAgainstBackrest, leanFor } from '../equipment/adjustableBenchGeometry'
 import { BAR_ON_BACK, SQUAT, squatPosition } from '../equipment/squatGeometry'
 import { CABLE, pushdownArm, rowPosition as cableRowPosition } from '../equipment/cableGeometry'
+import { PULLUP, pullupPosition } from '../equipment/pullupGeometry'
 import { ELBOW_DROP, FOOT_DROP, HAND_DROP, HIP_Y, KNEE_DROP, SHOE_Y, SHOULDER_X, SHOULDER_Y } from './proportions'
 
 const FEET_FORWARD = 0.38 // seated: feet planted this far in front of the hips
@@ -133,6 +134,8 @@ export function exercisePose(activity: Pick<Activity, 'kind'>, t: number, second
       return pushdownPose(t)
     case 'cableRow':
       return cableRowPose(t)
+    case 'pullup':
+      return pullupPose(t)
     default:
       return null
   }
@@ -173,6 +176,32 @@ function pushdownPose(t: number): BodyPose {
     foot: null,
     arms: () => arm({ shoulderX: wrap(grip.upper - lean), elbowX: wrap(grip.lower - grip.upper) }),
   }
+}
+
+// Pull-up: the whole body hangs off the floor (rise) and is lifted toward the
+// bar; the hands stay on the bar and the arms fold under them, elbows flaring
+// out and down. Legs hang with the knees slightly bent.
+function pullupPose(t: number): BodyPose {
+  const { rise, lean } = pullupPosition(t)
+  const shoulder = {
+    y: HIP_Y + rise + (SHOULDER_Y - HIP_Y) * Math.cos(lean),
+    z: PULLUP.standZ + (SHOULDER_Y - HIP_Y) * Math.sin(lean),
+  }
+  return {
+    lean,
+    rise,
+    follow: true,
+    foot: () => PULLUP.feet,
+    arms: (side) => armTo3D(side, inBody(PULLUP.gripX * side - SHOULDER_X * side, PULLUP.bar, shoulder, lean), { out: 1.2, back: 0.3 }),
+  }
+}
+
+// A spot measured from the shoulder (side view), turned into the leaning
+// body's own directions (up its spine, forward from its chest)
+function inBody(x: number, spot: Spot, shoulder: Spot, lean: number) {
+  const dy = spot.y - shoulder.y
+  const dz = spot.z - shoulder.z
+  return { x, y: dy * Math.cos(lean) + dz * Math.sin(lean), z: -dy * Math.sin(lean) + dz * Math.cos(lean) }
 }
 
 // Seated cable row: feet on the footplate, both hands on the V-handle, which

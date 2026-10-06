@@ -16,6 +16,7 @@ import { ADJ_BENCH_DEPTH, ADJ_BENCH_WIDTH, AdjustableBench } from '../equipment/
 import { SQUAT_RACK_DEPTH, SQUAT_RACK_WIDTH, SquatRack } from '../equipment/SquatRack'
 import { SQUAT } from '../equipment/squatGeometry'
 import { CABLE_DEPTH, CABLE_WIDTH, CableMachine } from '../equipment/CableMachine'
+import { PULLUP_DEPTH, PULLUP_WIDTH, PullupStation } from '../equipment/PullupStation'
 
 // Where the person goes to use a machine they get on (or into), in the
 // machine's own coordinates: z along its length, y the height of the
@@ -131,6 +132,14 @@ export const CATALOG = {
     menuSubtitle: 'Pick an exercise',
     tagHeight: 2.6,
     // No standAt here: pushdowns stand at the tower, rows sit on the seat
+  },
+  pullupBar: {
+    name: 'Pull-up bar',
+    width: PULLUP_WIDTH,
+    depth: PULLUP_DEPTH,
+    Model: PullupStation,
+    menuSubtitle: 'Pick an exercise',
+    tagHeight: 2.75,
   },
 } satisfies Record<string, CatalogEntry>
 

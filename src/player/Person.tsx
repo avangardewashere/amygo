@@ -7,6 +7,8 @@ import {
   ELBOW_DROP,
   FOOT_DROP,
   HAND_DROP,
+  HEAD_RADIUS,
+  HEAD_Y,
   HIP_X,
   HIP_Y,
   KNEE_DROP,
@@ -181,9 +183,9 @@ export function Person({ gait, hands = {}, activity = null }: PersonProps) {
           ))}
 
           {/* Head, with eyes so you can tell which way the person is facing */}
-          <group position-y={1.68}>
+          <group position-y={HEAD_Y}>
             <mesh castShadow>
-              <sphereGeometry args={[0.13, 24, 16]} />
+              <sphereGeometry args={[HEAD_RADIUS, 24, 16]} />
               <meshStandardMaterial color={COLORS.skin} />
             </mesh>
             {[0.045, -0.045].map((x) => (

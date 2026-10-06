@@ -14,3 +14,6 @@ export const ELBOW_DROP = 0.31 // shoulder → elbow
 export const HAND_DROP = 0.3 // elbow → hand
 
 export const TORSO_RADIUS = 0.2 // half the body's thickness
+
+export const HEAD_Y = 1.68 // middle of the head when standing
+export const HEAD_RADIUS = 0.13

@@ -10,6 +10,7 @@ import { BIKE } from '../equipment/bikeGeometry'
 import { ROWER } from '../equipment/rowerGeometry'
 import { ADJ, hipsAgainstBackrest } from '../equipment/adjustableBenchGeometry'
 import { CABLE } from '../equipment/cableGeometry'
+import { PULLUP } from '../equipment/pullupGeometry'
 import { repPhase, repsSince } from './reps'
 
 // Game state that both the 3D scene and the on-screen menus need to see.
@@ -33,6 +34,7 @@ export type ExerciseKind =
   | 'squat'
   | 'pushdown'
   | 'cableRow'
+  | 'pullup'
 
 type Point = { x: number; z: number }
 
@@ -147,6 +149,12 @@ export const EXERCISES: Record<ExerciseKind, Exercise> = {
     doing: 'Doing cable rows',
     standAt: placeHips({ y: CABLE.row.hipY, z: CABLE.row.hipZ }), // on the low seat
   },
+  pullup: {
+    machine: 'pullupBar',
+    name: 'Pull-ups',
+    doing: 'Doing pull-ups',
+    standAt: { z: PULLUP.standZ, y: 0 }, // under the bar; the pose lifts you off the floor
+  },
 }
 
 // Exercises done with dumbbells in your hands
@@ -208,6 +216,13 @@ export function stopExercise() {
   machine.cadence = 0
   machine.backrest = 0
   store.set({ activity: null, menu: null })
+}
+
+// Where the person goes after getting off a machine they stood (or hung) on:
+// back to the spot they came from, feet on the floor. null = they never moved.
+export function stepOffSpot(activity: Activity | null) {
+  if (!activity?.returnTo) return null
+  return { x: activity.returnTo.x, y: 0, z: activity.returnTo.z }
 }
 
 // ---------- Nearness (written by <Player> every frame) ----------

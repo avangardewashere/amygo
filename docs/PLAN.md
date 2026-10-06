@@ -295,6 +295,14 @@ the bar and lowers back down. Legs hang with a slight knee bend.
 
 **Visual check:** looks like hanging from the hands (body under the bar, arms doing the lifting).
 
+**Status: done** (2026-10-06, on branch `v3-full-body`). 38 tests passing (4 new: V3B3-T1..T4), each checked to fail when
+the behaviour it guards is broken. The body rises with the same `rise` the squat used to lower it; the hands use the 3D arm
+reach with the elbows flaring out. The step-off after a machine moved out of `Player` into `stepOffSpot()` so T4 can test
+it. Visual check in the browser: the person hangs off the floor and pulls up until the head is over the bar. Measured in the
+live scene: hands within 0.01 cm of the bar, chin 2.9 cm above the bar at the top, shoes 36–86 cm off the floor during the
+set, and after stopping the person is back at their start spot with both shoes on the floor. The optional Android check has
+not been done. **This completes v3, and the whole plan.**
+
 **Summary:** The pull-up bar teaches the person to lift their whole body off the floor, hanging from their hands. It completes
 the set of full-body movements.
 
