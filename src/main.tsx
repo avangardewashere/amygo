@@ -2,10 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import { startLogging } from './log/logStore'
+import { startApp } from './shell/startup'
 
-// Save each set as it finishes (see the Today tab)
-startLogging()
+// Saving sets, and the back gesture (see shell/startup.ts)
+startApp()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

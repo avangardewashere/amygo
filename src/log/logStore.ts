@@ -11,6 +11,8 @@ const store = createStore({ sets: readSavedLog() })
 
 export const useLog = <S>(select: (s: { sets: LoggedSet[] }) => S) => store.useSelect(select)
 export const getLog = store.get
+// Be told whenever the log changes (the pages' clock uses this; see shell/clock.ts)
+export const subscribeLog = store.subscribe
 
 let made = 0
 // An id that stays unique in this browser (crypto.randomUUID needs https,

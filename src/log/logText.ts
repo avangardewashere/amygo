@@ -1,8 +1,8 @@
 // The words for saved sets, e.g. "12 reps", "0.45 km", "4 sets · 9 min".
 // Kept apart from the page so they can be tested.
 import { clock } from '../interaction/activityText'
-import { EXERCISES } from '../exercises/catalog'
-import { daysAgo, type LoggedSet } from './sets'
+import { EXERCISES, type ExerciseKind } from '../exercises/catalog'
+import { dayKey, daysAgo, type LoggedSet } from './sets'
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`
 
@@ -40,6 +40,7 @@ export function dayLabel(key: string, now: number) {
   if (ago === 1) return 'Yesterday'
   const [year, month, day] = key.split('-').map(Number)
   const date = new Date(year, month - 1, day)
+  // (A day after today, only possible after the device's clock was moved back, gets its weekday too)
   if (ago < 7) return `${WEEKDAYS[date.getDay()]} ${day} ${MONTHS[month - 1]}`
   const thisYear = new Date(now).getFullYear()
   return year === thisYear ? `${day} ${MONTHS[month - 1]}` : `${day} ${MONTHS[month - 1]} ${year}`
@@ -64,3 +65,12 @@ export function daySummary(sets: LoggedSet[]) {
     })
     .join(' · ')
 }
+
+// The day a set finished, by name: "Yesterday"
+export const setDay = (set: LoggedSet, now: number) => dayLabel(dayKey(set.endedAt), now)
+
+// Under an exercise on the Exercises list: "Last: 12 reps · Yesterday"
+export const lastLine = (set: LoggedSet, now: number) => `Last: ${setNumbers(set)} · ${setDay(set, now)}`
+
+// An exercise's history page before its first set
+export const emptyHistory = (kind: ExerciseKind) => `Nothing saved for ${EXERCISES[kind].name} yet.`

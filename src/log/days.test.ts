@@ -83,14 +83,16 @@ describe('History by day', () => {
     )
 
     // On the page: under Earlier, the day's row with its totals and what was done
-    const log = await openLog(fakeStorage([...sets, curls(at(2026, 10, 7, 9))]))
+    // (plus a set dated tomorrow, as after the device's clock was moved back: it must still be listed)
+    const log = await openLog(fakeStorage([...sets, curls(at(2026, 10, 7, 9)), curls(at(2026, 10, 8, 9), 7)]))
     const { TodayPage } = await import('../shell/TodayPage')
     const html = renderToString(createElement(TodayPage, { now: at(2026, 10, 7, 15) })).replaceAll('<!-- -->', '')
     expect(html).toContain('Earlier')
     expect(html).toContain('Yesterday · 5 sets · 11 min')
     expect(html).toContain('Bicep curls 3 × 12 · Walk 1.20 km')
     expect(html).not.toContain('Today · ') // today is above, not repeated under Earlier
-    expect(log.getLog().sets).toHaveLength(6)
+    expect(html).toContain('Thu 8 Oct · 1 set · 17 s')
+    expect(log.getLog().sets).toHaveLength(7)
   })
 
   it('V7B2-T4: day names at a fixed "now" (Wednesday 7 Oct 2026)', () => {
@@ -102,6 +104,8 @@ describe('History by day', () => {
     expect(dayLabel('2026-09-30', now)).toBe('30 Sep') // a week or more: the date
     expect(dayLabel('2026-01-15', now)).toBe('15 Jan')
     expect(dayLabel('2025-12-31', now)).toBe('31 Dec 2025') // another year: with the year
+    // A day after today (only after the device's clock was moved back) is never called "Today"
+    expect(dayLabel('2026-10-08', now)).toBe('Thu 8 Oct')
   })
 
   it('V7B2-T5: Clear history asks first; yes empties the list and the saved copy, cancel leaves both', async () => {

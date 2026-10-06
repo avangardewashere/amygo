@@ -213,7 +213,52 @@ button on the page too. **Back** (the button on the page, or Android's back gest
 **Visual check:** do curls twice with different counts, open their History: Last and Best are right and both sets are
 listed. Start from the page goes to Home with the person curling. On the phone (optional), the back gesture closes the page.
 
-**Summary:** _(written when the block is done)_
+**Status: done** (2026-10-07, on branch `v7-workout-log`). 122 tests passing (6 new: V7B3-T1..T6, with checks added to
+V7B2-T3/T4), each checked to fail when the behaviour it guards is broken (24 breaks tried; see below). The history
+functions are `setsOf`, `bestSet` and `lastSets` in `src/log/sets.ts`; the page is `src/shell/ExerciseHistoryPage.tsx`; the
+page-in-a-tab state is in `src/shell/tabStore.ts`, and opening, closing and the back gesture are in `src/shell/tabs.ts`.
+The live card moved to `src/shell/NowDoing.tsx` so both pages share it. `main.tsx` now calls one `startApp()`
+(`src/shell/startup.ts`: saving sets, the back gesture), the same function the tests call.
+
+**Two changes from this plan:**
+- **Best on the rower is the longest distance, not the fastest pace.** The gym's rower has one fixed pace (2:00 per
+  500 m), so on pace every row would tie and "best" would always be the very first row.
+- **Start on the history page stays on that page** (the visual check above says it goes to Home). It is the list's own
+  Start, which has always kept you where you are; staying means the live card with Finish shows on the page, and the set
+  appears in its list when finished. Home then shows the person doing it.
+
+**A multi-agent review** (5 reviewers with different angles, each finding then checked by 2 skeptics trying to disprove
+it; 31 agents) confirmed 9 findings, 4 of them the same bug, and split on 3. All acted on:
+- **A leftover history entry after a reload.** The browser keeps an entry's mark across a reload (and Android's restore
+  of a sleeping tab), so Back from a newly opened page re-opened the old one. Now the mark is taken off at start-up, and an
+  entry that is already ours is swapped, never stacked on. Checked in real Chrome: the mark was gone after the reload, and
+  Back went to the list.
+- **Day labels on a page left open across midnight.** Sets finish while Exercises is open, so reading the clock once
+  went stale. All three pages now share one clock (`src/shell/clock.ts`), read when the app starts, every minute, when
+  the app comes back on screen, and whenever the log changes.
+- **Sets dated after today vanished from Today** (possible only after the device clock was moved back), caused by a
+  "0 or fewer days ago = Today" shortcut added earlier in this block. The shortcut is gone (the shared clock made it
+  unnecessary), and Earlier picks days by date, not by label.
+- **The rower's numbers left "km" alone on a line** at common Android widths. They now wrap evenly ("27 strokes" /
+  "· 0.18 km").
+- **Test gaps:** nothing checked that the history page sits beside the inert list (inside it, every button would be
+  dead), that `main.tsx` switches the back gesture on, or that the page's Start calls the list's start. All three are
+  checked now.
+- **Keyboard focus** fell to nowhere when Start turned into the live card; it now goes to the page title, and the next
+  Tab reaches Finish.
+
+**Red-checks:** 24 breaks, 23 failed their test. The one that didn't: removing a second, belt-and-braces fix for
+"Forward pressed on another tab" changed nothing, because the other fix (swap an entry that's already ours) already
+prevents that failure, so that redundant line was removed. **Checked in the browser** at phone width: curls twice (5 and
+9 reps); the list read "Last: 9 reps · Today"; History showed Last time and Best 9 reps and both sets, newest first; the
+browser's Back closed the page, stayed on Exercises and put focus back on the History button; Start on the page showed
+the live card, and Home showed the person curling; leaving the tab closed the page and removed its history entry. Shell:
+12.1 → 13.3 KB compressed (budget 60). **Known limit:** after a reload while a history page was open, one back gesture does
+nothing visible (the browser's leftover entry can be unmarked, not removed). The optional Android check has not been
+done. **This completes v7.**
+
+**Summary:** Each exercise on the list now shows when you last did it, and its History page shows last time, best and
+every set, with Start; Android's back gesture closes the page instead of leaving the app. That finishes v7.
 
 ---
 

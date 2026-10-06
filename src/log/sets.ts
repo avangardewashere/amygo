@@ -97,3 +97,35 @@ export function daysAgo(key: string, now: number) {
   }
   return Math.round((noon(dayKey(now)) - noon(key)) / 86_400_000)
 }
+
+// One exercise's sets, newest first. Walk and run are different exercises
+// (decision D4), so each keeps its own history.
+export function setsOf(sets: LoggedSet[], kind: ExerciseKind) {
+  return sets.filter((set) => set.kind === kind).sort((a, b) => b.endedAt - a.endedAt)
+}
+
+// What makes one set better than another: more reps for strength exercises,
+// more distance for cardio. The rower too: its pace is fixed (2:00 per 500 m),
+// so on pace every row would tie.
+const score = (set: LoggedSet) => set.reps ?? set.meters ?? 0
+
+// The best of one exercise's sets; on a tie, the earlier set (the first time
+// you reached it). null when there are none.
+export function bestSet(sets: LoggedSet[]): LoggedSet | null {
+  let best: LoggedSet | null = null
+  for (const set of sets) {
+    const better = !best || score(set) > score(best) || (score(set) === score(best) && set.endedAt < best.endedAt)
+    if (better) best = set
+  }
+  return best
+}
+
+// Each exercise's most recent set (for the "Last:" line on the Exercises list)
+export function lastSets(sets: LoggedSet[]) {
+  const last: Partial<Record<ExerciseKind, LoggedSet>> = {}
+  for (const set of sets) {
+    const seen = last[set.kind]
+    if (!seen || set.endedAt > seen.endedAt) last[set.kind] = set
+  }
+  return last
+}
