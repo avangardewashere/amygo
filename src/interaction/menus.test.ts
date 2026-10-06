@@ -14,6 +14,7 @@ describe('machine menus', () => {
     expect(labels('chestFly')).toEqual(['Chest fly'])
     expect(labels('bike')).toEqual(['Easy ride', 'Sprint'])
     expect(labels('rower')).toEqual(['Row'])
+    expect(labels('adjustableBench')).toEqual(['Incline dumbbell press', 'Seated curls'])
   })
 
   it('B0-T6b: carrying the dumbbell, machines offer nothing (the menu asks you to put it down)', () => {

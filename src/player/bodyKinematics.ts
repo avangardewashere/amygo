@@ -18,8 +18,12 @@ import {
 // Where the person's feet-origin stands (they face +z, unrotated)
 type Origin = { x?: number; y?: number; z?: number }
 
-// [left, right]
-export type LimbEnds = { hands: [Vector3, Vector3]; feet: [Vector3, Vector3] }
+// [left, right], plus the spine: from between the hips to between the shoulders
+export type LimbEnds = {
+  hands: [Vector3, Vector3]
+  feet: [Vector3, Vector3]
+  spine: { hips: Vector3; shoulders: Vector3 }
+}
 
 const joint = (parent: Object3D, x: number, y: number, z = 0) => {
   const child = new Object3D()
@@ -30,7 +34,7 @@ const joint = (parent: Object3D, x: number, y: number, z = 0) => {
 
 // The body fully settled into `pose` (joints at their targets, as after the
 // easing in <Person> has caught up). Returns the middle of each hand and the
-// middle of each shoe, in the same coordinates as `origin`.
+// middle of each shoe (and the spine), in the same coordinates as `origin`.
 export function limbEnds(pose: BodyPose, origin: Origin = {}): LimbEnds {
   const root = new Object3D()
   // A sliding pose (the rower's seat) moves the whole body along z
@@ -40,6 +44,7 @@ export function limbEnds(pose: BodyPose, origin: Origin = {}): LimbEnds {
   const posture = joint(root, 0, HIP_Y)
   posture.rotation.x = pose.lean
   const body = joint(posture, 0, -HIP_Y)
+  const neck = joint(body, 0, SHOULDER_Y)
 
   const feet = [1, -1].map((side) => {
     const legs = pose.foot ? legAngles(pose.foot(side), pose.lean) : { hip: 0, knee: 0 }
@@ -64,5 +69,6 @@ export function limbEnds(pose: BodyPose, origin: Origin = {}): LimbEnds {
   return {
     hands: [where(hands[0]), where(hands[1])],
     feet: [where(feet[0]), where(feet[1])],
+    spine: { hips: where(posture), shoulders: where(neck) },
   }
 }

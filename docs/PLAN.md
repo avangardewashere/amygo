@@ -188,6 +188,12 @@ upright for seated curls. The person sits or reclines to match.
 
 **Visual check:** the backrest visibly tilts when you pick each exercise.
 
+**Status: done** (2026-10-05). 26 tests passing (3 new: V2B3-T1..T3), each checked to fail when the behaviour it guards is
+broken. Visual check in the browser: the backrest rises to 45° for the incline press and to 85° for seated curls, and folds
+back flat when you stop. Measured in the live scene: the person's back is exactly one torso-thickness (20 cm) off the pad at
+both the hips and the shoulders, at both angles. The backrest pivots at the back of the seat, and a strut underneath
+stretches to hold it up. The optional Android check has not been done.
+
 **Summary:** The adjustable bench adds a machine that changes shape per exercise: a 45° incline press and upright seated curls.
 The person's back follows the backrest angle.
 

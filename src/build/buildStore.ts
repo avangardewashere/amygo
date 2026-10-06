@@ -32,6 +32,8 @@ const store = createStore<BuildState>({
     // Along the left side of the room, facing the front wall
     { id: 'legpress-1', type: 'legPress', x: -7.5, z: 3, turns: 0 },
     { id: 'bench-1', type: 'bench', x: 2.5, z: 3.5, turns: 0 },
+    // Beside it, to its left
+    { id: 'adjbench-1', type: 'adjustableBench', x: 1, z: 3.5, turns: 0 },
     // Back to the right-hand wall, facing into the room (1 quarter turn = facing -x)
     { id: 'chestfly-1', type: 'chestFly', x: 8.5, z: 1, turns: 1 },
     // Beside the treadmill, facing the back wall like it does

@@ -7,6 +7,7 @@ import { LYING_HIP, SEATED_HIP } from '../equipment/benchGeometry'
 import { FLY, flyAngle } from '../equipment/chestFlyGeometry'
 import { BIKE, crankAngle, footOnPedal } from '../equipment/bikeGeometry'
 import { ROWER, rowerPosition } from '../equipment/rowerGeometry'
+import { ADJ, hipsAgainstBackrest, leanFor } from '../equipment/adjustableBenchGeometry'
 import { ELBOW_DROP, FOOT_DROP, HAND_DROP, HIP_Y, KNEE_DROP, SHOE_Y, SHOULDER_Y } from './proportions'
 
 const FEET_FORWARD = 0.38 // seated: feet planted this far in front of the hips
@@ -50,14 +51,24 @@ export type BodyPose = {
 // Sitting upright with both feet flat on the floor in front
 const seatedFeet = (hipY: number) => () => ({ z: FEET_FORWARD, y: SHOE_Y - hipY })
 
+// Pressing dumbbells away from the chest, relative to the body (so lying flat
+// it presses at the ceiling, and on an incline it presses up along the incline).
+// t = 0: arms straight out from the chest; t = 1: weights lowered beside the
+// chest, elbows out to the sides, forearms pointing the way you press.
+const pressArms = (t: number) => (s: number) =>
+  arm({ shoulderX: -1.55 * (1 - t), shoulderZ: s * 1.45 * t, elbowX: -0.05 - 1.55 * t })
+
+// Curling: upper arms hang down by the sides (tucked back by `tuck`), only the
+// elbows bend, bringing the weights up
+const curlArms = (t: number, tuck: number) => () => arm({ shoulderX: tuck, elbowX: -(0.2 + 2.0 * t) })
+
 // Every exercise as a body pose. t: where in the rep (0 → 1 → 0, see reps.ts);
 // seconds: time since starting (for things that keep going round, like pedals).
 // Exercises not listed (walking and running on the treadmill) use the walking pose.
 export function exercisePose(activity: Pick<Activity, 'kind'>, t: number, seconds = 0): BodyPose | null {
   switch (activity.kind) {
     case 'curl':
-      // Upper arms stay by the sides; only the elbows bend, bringing the weights up
-      return { lean: 0, foot: null, arms: () => arm({ shoulderX: 0.12, elbowX: -(0.2 + 2.0 * t) }) }
+      return { lean: 0, foot: null, arms: curlArms(t, 0.12) }
     case 'lateral':
       // Arms lift out sideways to shoulder height, elbows soft
       return { lean: 0, foot: null, arms: (s) => arm({ shoulderX: 0.1, shoulderZ: s * (0.15 + 1.3 * t), elbowX: -0.3 }) }
@@ -73,14 +84,19 @@ export function exercisePose(activity: Pick<Activity, 'kind'>, t: number, second
       }
     }
     case 'benchPress':
-      // Lying flat on your back, feet on the floor. t = 0: arms straight up
-      // toward the ceiling; t = 1: weights lowered to the chest, elbows out to
-      // the sides, forearms pointing up.
-      return {
-        lean: -Math.PI / 2,
-        foot: () => ({ z: 0.35, y: SHOE_Y - LYING_HIP.y }),
-        arms: (s) => arm({ shoulderX: -1.55 * (1 - t), shoulderZ: s * 1.45 * t, elbowX: -0.05 - 1.55 * t }),
-      }
+      // Lying flat on your back, feet on the floor, pressing at the ceiling
+      return { lean: -Math.PI / 2, foot: () => ({ z: 0.35, y: SHOE_Y - LYING_HIP.y }), arms: pressArms(t) }
+    case 'inclinePress': {
+      // Back on the 45° backrest, so the same press goes up and forward
+      const { incline } = ADJ.angles
+      return { lean: leanFor(incline), foot: seatedFeet(hipsAgainstBackrest(incline).y), arms: pressArms(t) }
+    }
+    case 'seatedCurl': {
+      // Sitting against the upright backrest. It tilts the body back a little,
+      // so the upper arms tuck forward by the same amount to hang straight down.
+      const lean = leanFor(ADJ.angles.upright)
+      return { lean, foot: seatedFeet(hipsAgainstBackrest(ADJ.angles.upright).y), arms: curlArms(t, 0.05 - lean) }
+    }
     case 'shoulderPress':
       // Seated upright. t = 0: weights at shoulder height (upper arms out to the
       // sides, forearms up); t = 1: pressed straight overhead.

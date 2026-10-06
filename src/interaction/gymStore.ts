@@ -8,6 +8,7 @@ import { SEATED_HIP, placeHips } from '../equipment/benchGeometry'
 import { machine } from '../equipment/machineState'
 import { BIKE } from '../equipment/bikeGeometry'
 import { ROWER } from '../equipment/rowerGeometry'
+import { ADJ, hipsAgainstBackrest } from '../equipment/adjustableBenchGeometry'
 import { repPhase, repsSince } from './reps'
 
 // Game state that both the 3D scene and the on-screen menus need to see.
@@ -26,6 +27,8 @@ export type ExerciseKind =
   | 'ride'
   | 'sprint'
   | 'row'
+  | 'inclinePress'
+  | 'seatedCurl'
 
 type Point = { x: number; z: number }
 
@@ -81,6 +84,7 @@ type Exercise = {
   stride?: number // treadmill: how hard the legs work (1 = normal walk)
   cadence?: number // bike: pedal turns per second
   strokes?: boolean // rower: count strokes and show a pace per 500 m
+  backrest?: number // adjustable bench: backrest angle up from flat (radians)
   // Dumbbells in both hands, and how they're held: bar side to side ('across')
   // or pointing ahead ('forward')
   weights?: 'across' | 'forward'
@@ -110,6 +114,22 @@ export const EXERCISES: Record<ExerciseKind, Exercise> = {
   ride: { machine: 'bike', name: 'Easy ride', doing: 'Cycling', speed: 20 / 3.6, cadence: BIKE.cadence.easy },
   sprint: { machine: 'bike', name: 'Sprint', doing: 'Sprinting', speed: 32 / 3.6, cadence: BIKE.cadence.sprint },
   row: { machine: 'rower', name: 'Row', doing: 'Rowing', speed: ROWER.speed, strokes: true },
+  inclinePress: {
+    machine: 'adjustableBench',
+    name: 'Incline dumbbell press',
+    doing: 'Doing incline presses',
+    weights: 'across',
+    backrest: ADJ.angles.incline,
+    standAt: placeHips(hipsAgainstBackrest(ADJ.angles.incline)),
+  },
+  seatedCurl: {
+    machine: 'adjustableBench',
+    name: 'Seated curls',
+    doing: 'Doing seated curls',
+    weights: 'across',
+    backrest: ADJ.angles.upright,
+    standAt: placeHips(hipsAgainstBackrest(ADJ.angles.upright)),
+  },
 }
 
 // Exercises done with dumbbells in your hands
@@ -157,6 +177,7 @@ function startExercise(kind: ExerciseKind) {
   machine.activeId = piece.id
   machine.speed = EXERCISES[kind].speed ?? 0
   machine.cadence = EXERCISES[kind].cadence ?? 0
+  machine.backrest = EXERCISES[kind].backrest ?? 0
   machine.startedAt = base.startedAt
   store.set({ activity, menu: null })
 }
@@ -166,6 +187,7 @@ export function stopExercise() {
   machine.activeId = null
   machine.speed = 0
   machine.cadence = 0
+  machine.backrest = 0
   store.set({ activity: null, menu: null })
 }
 
