@@ -23,6 +23,9 @@ const renderer = {
   dispose: noop,
 }
 
+// One scene at a time: every call draws on the same stand-in canvas, and R3F keeps
+// one root per canvas, so a second call replaces the first scene. Unmount
+// (or just measure) before rendering the next one.
 export async function renderScene<P extends object>(component: ComponentType<P>, props: P) {
   const root = createRoot(canvas as unknown as HTMLCanvasElement)
   await root.configure({ gl: renderer as never, frameloop: 'never', size: { width: 100, height: 100, top: 0, left: 0 } })

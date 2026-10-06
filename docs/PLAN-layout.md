@@ -344,11 +344,35 @@ CARDIO painted over their zones and ONE MORE REP. on the left wall, all painted 
 | L2B3-T2 | Every machine is still reachable on foot with the props in (the L1B1-T3 walk test, props as obstacles) |
 | L2B3-T3 | Clock hands: 3:00 puts the hour hand at a quarter turn and the minute hand at 12; 6:30 puts the hour hand halfway between 6 and 7 |
 | L2B3-T4 | A plate tree stays beside its squat rack after the rack is moved or turned |
-| L2B3-T5 | The draw-call budget still passes |
+| L2B3-T5 | ~~The draw-call budget still passes~~ → The props have their own draw budget (86 = 66 measured + 30 %), like the walls in L2B1-T4 |
 
 **Visual check:** the whole gym from the default view, then walk the person through each zone. Optional Android check.
 
-**Summary:** _(written when the block is done)_
+**Status: done** (2026-10-07, on branch `l2-walls`). 85 tests passing (5 new: L2B3-T1..T5), each checked to fail when the
+thing it guards is broken: the kettlebell shelf pushed into `bench-3` (T1), two shelves parked in front of the treadmills
+(T2 names `treadmill-2` and `treadmill-3`), the clock not wrapping at 12 (T3), the plate tree turned the wrong way (T4),
+the fixed props left unmerged (T5: 103 > 86). **T4 had to be tightened:** its first version still passed with the tree
+turned the wrong way, because a tree at the *other* end of the bar is still "at the end of the bar". It now also checks
+that one more quarter turn of the rack swings the tree a quarter turn the same way three.js turns the model, so the tree
+stays at the same end. **How it's built:** layout and maths in `src/props/propLayout.ts` (fixed props, `plateTreeFor(rack)`,
+`propObstacles()`, `WALL_PROPS`, `clockAngles(date)`); models in `FloorProps.tsx` and `WallProps.tsx`; `Props.tsx` joins
+them into the scene. A new `src/build/Merged.tsx` merges still parts for anything (the fixed props all merge together; each
+plate tree merges on its own so it can follow its rack). Clock hands and the TVs' timer bar are marked moving. Floor props
+are solid for walking only: `Player.tsx` adds `propObstacles()` to what blocks movement, but "which machine is nearest"
+still sees machines only, so a plant can never hide a treadmill's menu. Wall props are flat and face into the room, so
+they hide with their wall. **Cost:** kettlebells stopped casting shadows (they sit on a shelf, the shadows hardly showed,
+and it let each bell merge into one draw per colour): 78 → 66 draws for all props. Scene total **613 draws**, 42.0k
+triangles. **Checked in the browser:** every prop in place from the default view (plate trees, kettlebell shelf, sled, mats
+and foam roller on the turf, fountain, plants, clock, speaker), the two TVs glowing under CARDIO after an orbit, no new console
+errors. **Not checked by hand:** walking into a prop. The arrow keys move the person relative to the camera, so my
+scripted walk went diagonally past the cable machines instead of into the sled; the blocking rule is covered by T2 and is
+one line in `Player.tsx`. Worth a try yourself: walk into the sled or a plant. The optional Android check has not been done.
+A test-helper limit found on the way: `renderScene` keeps one scene at a time (R3F keeps one root per canvas), now noted
+in the helper.
+
+**Summary:** The gym looks used now: plate trees that follow their racks, a kettlebell shelf, a sled and mats on the turf,
+a water fountain, plants, speakers, two TVs over the treadmills, and a clock showing the real time. You walk round the
+floor props, and they never get in the way of using a machine.
 
 ---
 

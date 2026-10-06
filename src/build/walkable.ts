@@ -9,8 +9,9 @@ const STEP = 0.25 // the build grid: fine enough to find any gap the body fits t
 // floor in grid steps, never through furniture or walls, and at each spot ask
 // the same question the game asks ("which machine is closest in reach?").
 // A machine hidden behind its neighbours never wins that question, so it
-// can't be used, even if its edge is close.
-export function usableFrom(start: { x: number; z: number }, obstacles: Obstacle[]) {
+// can't be used, even if its edge is close. `solid` is everything you can't walk
+// through (machines plus props); only `obstacles` count as things to use.
+export function usableFrom(start: { x: number; z: number }, obstacles: Obstacle[], solid: Obstacle[] = obstacles) {
   const limitX = ROOM.width / 2 - BODY_RADIUS
   const limitZ = ROOM.depth / 2 - BODY_RADIUS
   const key = (i: number, j: number) => `${i},${j}`
@@ -30,7 +31,7 @@ export function usableFrom(start: { x: number; z: number }, obstacles: Obstacle[
       const nx = next.i * STEP
       const nz = next.j * STEP
       if (seen.has(key(next.i, next.j))) continue
-      if (Math.abs(nx) > limitX || Math.abs(nz) > limitZ || blocked(nx, nz, obstacles)) continue
+      if (Math.abs(nx) > limitX || Math.abs(nz) > limitZ || blocked(nx, nz, solid)) continue
       seen.add(key(next.i, next.j))
       queue.push(next)
     }
