@@ -2,10 +2,11 @@
 // gym's input code can ask "is Home open?" without import loops.
 import { createStore } from '../lib/store'
 
-export type Tab = 'home' | 'exercises'
+export type Tab = 'home' | 'exercises' | 'today'
 export const TABS: { id: Tab; label: string }[] = [
   { id: 'home', label: 'Home' },
   { id: 'exercises', label: 'Exercises' },
+  { id: 'today', label: 'Today' },
 ]
 
 const store = createStore({ tab: 'home' as Tab })

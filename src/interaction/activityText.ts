@@ -7,7 +7,7 @@ import { strokesSince } from '../equipment/rowerGeometry'
 const toKmh = (metersPerSecond: number) => (metersPerSecond * 3.6).toFixed(1)
 
 // 75 seconds → "1:15"
-function clock(seconds: number) {
+export function clock(seconds: number) {
   const whole = Math.floor(seconds)
   return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
 }

@@ -63,6 +63,8 @@ const store = createStore<GymState>({
 // Read one piece of state in a component: const holding = useGym((s) => s.holding)
 export const useGym = <S>(select: (s: GymState) => S) => store.useSelect(select)
 export const getGym = store.get
+// Be told whenever the gym state changes (the workout log uses this to notice a set ending)
+export const subscribeGym = store.subscribe
 
 // Where the person stands and faces, written by <Player> every frame.
 // A plain object because it changes 60×/second and nothing re-renders from it.

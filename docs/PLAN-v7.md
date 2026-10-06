@@ -61,9 +61,9 @@ and it doesn't need to wait for the v5 phone check (see D1).
 - **By exercise last,** because it adds a page inside a tab (the first in the app) and touches the Exercises list, which is
   the most-used page. It's best built on a format that has already settled.
 
-## Decisions (please answer before Block 1)
+## Decisions (decided 2026-10-07, all as recommended)
 
-| # | Question | Recommendation |
+| # | Question | Decision |
 | --- | --- | --- |
 | D1 | Start v7 **now**, or wait until the v5 phone check (V5B3-T4) is done? | **Now.** v7 adds no 3D and stays inside the shell budget, so it can't change the phone numbers. The phone check can happen any time. |
 | D2 | A set saves what the gym measures: **reps** (strength), **time and distance** (treadmill, bike), **strokes, time and distance** (rower). There are **no weights**, because the gym has no weight picker. OK? | **Yes.** A weight picker would be its own version. |
@@ -114,7 +114,24 @@ Exercises."
 numbers the popup showed. Reload: still three. Remove one, reload: two. At phone width, the footer's three tabs fit and
 read clearly.
 
-**Summary:** _(written when the block is done)_
+**Status: done** (2026-10-07, on branch `v7-workout-log`, built in the `gym3d-v6` folder). 110 tests passing (7 new:
+V7B1-T1..T7), each checked to fail when the behaviour it guards is broken. The log lives in `src/log/`: `sets.ts` (what
+a set is, the D3 minimums, `dayKey` and today's sets), `logStorage.ts` (key `gym3d.log`, version 1), `logStore.ts` (the
+list, `recordSet`, `removeSet`, and `startLogging()`, called once in `main.tsx`), `logText.ts` (the words); the page is
+`src/shell/TodayPage.tsx`. The gym store gained `subscribeGym` so the log can watch it. **Found on the
+way:** every way of stopping, including starting a different exercise, passes through "no exercise" first (Start from
+the list stops the old one), so a first red-check that only broke "another exercise starting" changed nothing; T1 is
+checked instead against wrong numbers, a wrong time of day, and a set saved twice. Ids don't use
+`crypto.randomUUID`, because it needs https and a phone opening the laptop over Wi-Fi has plain http. **Checked in the
+browser:** curls stopped with Finish (card: 6 reps; saved: 6 reps), a walk stopped with E on Home (header: 0.03 km · 0:17;
+saved: 17.3 s, 25.9 m), squats stopped by entering build mode (header: 3 reps; saved: 3). Today listed them newest first
+with "3 sets · 41 s", and still did after a reload; Remove on the walk, reload: "2 sets · 24 s". At phone width the three
+tabs fit. **Changed after looking:** a row read "3 reps · 0:09 · 4:08", two clock-like numbers side by side, so the finish
+time now says "at 4:08". Shell: 10.3 → 11.4 KB compressed (budget 60). No console errors. The optional Android check has
+not been done.
+
+**Summary:** Every finished set is now saved in this browser, however the exercise ends, and the new Today tab lists
+today's sets with their totals, surviving a reload, with Remove for mistakes.
 
 ### Block 2: History by day
 

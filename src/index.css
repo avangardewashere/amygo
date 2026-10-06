@@ -523,3 +523,41 @@ body,
   margin: 0;
   opacity: 0.6;
 }
+
+/* ---------- Today page ---------- */
+
+.today-totals {
+  margin-bottom: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.set-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 12px;
+}
+
+.set-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 8px 8px 14px;
+}
+
+.set-list li + li {
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.set-list strong {
+  display: block;
+}
+
+.set-list span {
+  font-size: 0.85rem;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}

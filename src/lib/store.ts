@@ -16,6 +16,8 @@ export function createStore<T extends object>(initial: T) {
 
   return {
     get: () => state,
+    // Be told about every change (returns a function that stops it)
+    subscribe,
     set(patch: Partial<T>) {
       state = { ...state, ...patch }
       listeners.forEach((notify) => notify())

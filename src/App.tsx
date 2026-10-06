@@ -7,6 +7,7 @@ import { perfEnabled } from './scene/quality'
 import { Header } from './shell/Header'
 import { TabBar } from './shell/TabBar'
 import { ExercisesPage } from './shell/ExercisesPage'
+import { TodayPage } from './shell/TodayPage'
 import { useTab } from './shell/tabStore'
 
 // Add ?perf to the address to see the speed readout
@@ -21,7 +22,8 @@ export const LOADING_TEXT = 'Loading the gym…'
 // The app: a header, the page in the middle, and the tab bar at the bottom.
 // The gym (Home) is always there underneath; other pages cover it.
 export default function App() {
-  const home = useTab() === 'home'
+  const tab = useTab()
+  const home = tab === 'home'
   const building = useBuild((s) => s.mode === 'build')
 
   return (
@@ -33,7 +35,8 @@ export default function App() {
         </Suspense>
         {home && !building && <Joystick />}
         {home && <BuildBar />}
-        {!home && <ExercisesPage />}
+        {tab === 'exercises' && <ExercisesPage />}
+        {tab === 'today' && <TodayPage />}
         {SHOW_PERF && <PerfReadout />}
       </div>
       <TabBar />
