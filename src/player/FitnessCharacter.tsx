@@ -19,7 +19,7 @@ const STRIDE_SPEED = 9 // same rhythm as <Person>, so footsteps feel the same
 const HAND = { x: 0.6, y: 1.0, z: 0.07 }
 
 export function FitnessCharacter({ gait, hands = {}, activity = null }: PersonProps) {
-  const { scene } = useGLTF(MODEL_URL)
+  const { scene } = useGLTF(MODEL_URL, false)
   const body = useRef<Group>(null)
   const posture = useRef<Group>(null)
   const phase = useRef(0)

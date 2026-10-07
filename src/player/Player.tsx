@@ -55,8 +55,9 @@ const STANDING_STILL = { x: 0, y: 0 }
 const LOOK = 'human' as 'human' | 'fitness' | 'classic'
 const Body = { human: HumanPerson, fitness: FitnessCharacter, classic: Person }[LOOK]
 // Only fetch a model file when that look is actually used
-if (LOOK === 'fitness') useGLTF.preload(MODEL_URL)
-if (LOOK === 'human') useGLTF.preload(HUMAN_URL)
+// false = no Draco: a Draco model would fetch its decoder from another site, which the offline copy can't hold
+if (LOOK === 'fitness') useGLTF.preload(MODEL_URL, false)
+if (LOOK === 'human') useGLTF.preload(HUMAN_URL, false)
 
 // Turn smoothly toward an angle, the short way round
 function turnToward(object: Object3D, yaw: number, delta: number) {

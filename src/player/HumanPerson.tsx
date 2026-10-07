@@ -11,7 +11,7 @@ import { poseModel, prepareModel } from './humanRig'
 export const HUMAN_URL = `${import.meta.env.BASE_URL}models/man.glb`
 
 export function HumanPerson(props: PersonProps) {
-  const { scene } = useGLTF(HUMAN_URL)
+  const { scene } = useGLTF(HUMAN_URL, false)
 
   // Our own copy (a skinned model must be cloned with its skeleton), sized and
   // placed to match our body

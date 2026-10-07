@@ -25,7 +25,9 @@ beforeAll(async () => {
     const result = spawnSync(`node scripts/check-budget.mjs ${args}`, { shell: true, encoding: 'utf8' })
     return { status: result.status, output: result.stdout + result.stderr }
   }
-  const build = spawnSync('npx vite build', { shell: true, encoding: 'utf8' })
+  // NODE_ENV=production, as on Vercel: Vitest sets it to 'test', which would give a development build
+  const { env } = await node('node:process')
+  const build = spawnSync('npx vite build', { shell: true, encoding: 'utf8', env: { ...env, NODE_ENV: 'production' } })
   if (build.status !== 0) throw new Error('build failed:\n' + build.stdout + build.stderr)
 }, 180_000)
 

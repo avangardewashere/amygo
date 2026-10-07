@@ -355,7 +355,46 @@ never reloads by itself.
   the worker at all. That's why Block 1 comes first.
 - **The tests are a simulation** with pretend caches. The real proof is the DevTools offline check and the phone.
 
-**Summary:** _(written when the block is done)_
+**Status: done** (2026-10-07, on branch `v8-go-public`; not yet pushed). 136 tests passing (7 new: V8B2-T1..T7). **Built:**
+`src/offline/sw.js` (the worker), `src/offline/sw-remove.js` (the escape hatch), `src/offline/precache.ts` (what's kept,
+and the version), `src/offline/register.ts` (registering, and noticing updates), `src/shell/UpdateNote.tsx`, the
+`offline()` plugin in `vite.config.ts`, the "Offline list" section of `scripts/check-budget.mjs`, `/sw.js` no-cache in
+`vercel.json`, and "no Draco" on every `useGLTF`. **Changed from this plan:** the kept list is "every file the build
+writes, except the worker and the unused model" (not a named list), so Block 3's manifest and icons join by themselves;
+the plugin runs at `writeBundle`, so a failed build shows its own error.
+
+**The real desktop check passed.** The production build served on `localhost`; the worker registered once the gym had
+arrived, took charge of the page, and kept all 9 files. Then **the server was stopped entirely** (stricter than DevTools'
+offline switch): reload, the whole app opened with the gym, a set of curls counted, and Finish saved it to Today. Then an
+update: one word changed and rebuilt; the open app showed "A new version of Amygo is ready · Reload", hid it during a
+set, and Reload switched versions once, deleted the old copy and kept the saved set.
+
+**Found on the way: the tests' builds were development builds.** Vitest sets `NODE_ENV=test`, and the builds the tests
+start (the size check's and the offline tests') inherited it, so they weren't what Vercel ships (where the worker,
+rightly, never registers). They now build with `NODE_ENV=production`, and a test checks the result is a production build.
+A timing check (V7B2-T6) now takes the best of five runs: the code takes 3–10 ms; one run had caught a 96 ms pause.
+
+**A multi-agent review** (5 angles, 2 skeptics per finding) was cut short by the account's monthly spending limit: the
+worker, update-lifecycle and build reviewers finished; the test-strength and plan/UX reviewers did not run, and most
+skeptics did not run either. Acted on:
+- **Confirmed, reproduced in real Chromium: a newer version could go live with an empty offline copy.** If an older
+  waiting version took over while a newer one was still storing its files, it deleted the newer one's copy; the newer
+  one then went live with nothing kept (offline: Chrome's error page). The install now checks its copy still exists and
+  fails otherwise, so the browser installs it again later. T2 reproduces the race.
+- **Confirmed: the install downloaded three.js and the model a second time.** The app's fingerprinted files now come from
+  the browser's own cache; the page, the model and the icon are checked with the site (a short reply when unchanged).
+- **Confirmed: with two Amygo windows, the second one's Reload did nothing, and a reload could come later by itself,
+  mid-exercise.** Reload now just reloads when the new version has already taken over. T6 covers it.
+- **Unverified, fixed anyway:** the plugin ran even after a failed build, hiding Vercel's real error (now
+  `writeBundle`: a broken import shows "Could not resolve…"); the test's temporary build copies weren't ignored by git.
+- **Unverified, not acted on:** "after a broken deploy, a plain reload doesn't pick up the fix until every Amygo window is
+  closed". True of service workers generally; the update note and the escape hatch are the plan's answer, and changing
+  how navigations are answered is a bigger, riskier change than this block should make without a full review.
+
+The optional Android check (airplane mode on the public link) waits for the push.
+
+**Summary:** After one visit, Amygo opens and saves sets with no signal, and a new version announces itself with a note
+that never interrupts a set; every build refuses to finish if the offline copy would have holes.
 
 ### Block 3: Install Amygo
 

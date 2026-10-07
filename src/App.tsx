@@ -10,13 +10,21 @@ import { ExercisesPage } from './shell/ExercisesPage'
 import { TodayPage } from './shell/TodayPage'
 import { useTab, useWelcome } from './shell/tabStore'
 import { Welcome } from './shell/Welcome'
+import { UpdateNote } from './shell/UpdateNote'
+import { gymArrived } from './offline/register'
 
 // Add ?perf to the address to see the speed readout
 const SHOW_PERF = perfEnabled(window.location.search)
 
 // The 3D gym (and three.js with it) is a separate download, asked for after
-// the header, tabs and list have shown: they don't need it
-const GymScene = lazy(() => import('./scene/GymScene').then((module) => ({ default: module.GymScene })))
+// the header, tabs and list have shown: they don't need it. Once it has
+// arrived, the offline copy can be made (from the browser's cache, not a second download).
+const GymScene = lazy(() =>
+  import('./scene/GymScene').then((module) => {
+    gymArrived()
+    return { default: module.GymScene }
+  }),
+)
 
 export const LOADING_TEXT = 'Loading the gym…'
 
@@ -45,6 +53,7 @@ export default function App() {
         {tab === 'today' && <TodayPage />}
         {SHOW_PERF && <PerfReadout />}
       </div>
+      <UpdateNote />
       <TabBar />
     </main>
   )

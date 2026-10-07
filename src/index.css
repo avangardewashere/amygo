@@ -789,3 +789,17 @@ body,
 .welcome-actions .list-button {
   flex: 1 1 140px;
 }
+
+/* ---------- Update note (above the tabs) ---------- */
+
+.update-note {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
+  border-top: 1px solid rgb(228 87 46 / 0.5);
+  background: rgb(228 87 46 / 0.12);
+  font-size: 0.9rem;
+}

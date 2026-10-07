@@ -245,9 +245,11 @@ describe('Amygo online', () => {
     expect(vercel.buildCommand).toBe('npm run build')
     expect(pkg.scripts.build).toMatch(/node scripts\/check-budget\.mjs$/)
     expect(vercel.outputDirectory).toBe('dist')
-    expect(text['/vite.config.ts']).not.toMatch(/outDir/) // Vite writes to dist
+    expect(text['/vite.config.ts']).not.toMatch(/outDir\s*:/) // nothing sets another folder: Vite writes to dist
     expect(vercel.headers).toEqual([
       { source: '/assets/(.*)', headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
+      // (v8 Block 2: the offline worker is always checked, so phones notice a deploy)
+      { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache' }] },
     ])
     // Vercel uses the laptop's major Node version; the package carries Amygo's name
     expect(pkg.engines.node).toBe('24.x')
