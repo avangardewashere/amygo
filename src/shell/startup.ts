@@ -2,6 +2,7 @@
 // and the tests call the very same function, so what they check is what runs.
 import { startLogging } from '../log/logStore'
 import { isFirstVisit } from './firstVisit'
+import { listenForInstall } from './install'
 import { setWelcome } from './tabStore'
 import { listenToBack, listenToWelcomeKeys } from './tabs'
 
@@ -14,9 +15,12 @@ export function startApp() {
   const stopBack = listenToBack()
   // Escape closes the welcome card
   const stopWelcomeKeys = listenToWelcomeKeys()
+  // Chrome's offer to install (it can come before React draws), and keeping data once installed
+  const stopInstall = listenForInstall()
   return () => {
     stopLogging()
     stopBack()
     stopWelcomeKeys()
+    stopInstall()
   }
 }

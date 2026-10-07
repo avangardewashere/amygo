@@ -298,8 +298,15 @@ describe('Amygo online', () => {
       if (file.endsWith('.test.ts')) continue
       for (const match of withoutComments(source).matchAll(/models\/[\w.-]+\.glb/gi)) asked.add(match[0])
     }
-    for (const match of text['/index.html'].matchAll(/href="\/([^"]+)"/g)) asked.add(match[1])
-    expect([...asked].sort()).toEqual(['favicon.svg', 'models/fitness-character.glb', 'models/man.glb'])
+    // (index.html without its comments: a commented-out link asks for nothing)
+    for (const match of text['/index.html'].replace(/<!--[\s\S]*?-->/g, '').matchAll(/href="\/([^"]+)"/g)) asked.add(match[1])
+    expect([...asked].sort()).toEqual([
+      'favicon.svg',
+      'icons/apple-touch-icon-180.png', // (v8 Block 3)
+      'manifest.webmanifest',
+      'models/fitness-character.glb',
+      'models/man.glb',
+    ])
     for (const path of asked) expect(existsExactly(`/public/${path}`), path).toBe(true)
     // The lockfile has the Linux versions of the two native build tools Vercel's machines need
     expect(text['/package-lock.json']).toContain('"node_modules/@rolldown/binding-linux-x64-gnu"')
@@ -316,5 +323,5 @@ describe('Amygo online', () => {
     expect(icon).toContain('#e4572e') // Amygo orange
     expect(icon.length).toBeLessThan(2048)
     // (The shell's 60 KB budget is checked on a real build by V6B3-T2, in this same suite.)
-  })
+  }, 60_000) // (drawing the PNG icons, v8 Block 3, takes several seconds)
 })

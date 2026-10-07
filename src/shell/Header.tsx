@@ -4,6 +4,7 @@ import { headline, progressText } from '../interaction/activityText'
 import { useBuild } from '../build/buildStore'
 import { ROOM } from '../scene/dimensions'
 import { APP_NAME } from './brand'
+import { installApp, useInstallChoice } from './install'
 import { useTab } from './tabStore'
 import { WELCOME_BUTTON_ID, openWelcome } from './tabs'
 
@@ -29,6 +30,7 @@ function Doing() {
 export function Header() {
   const home = useTab() === 'home'
   const building = useBuild((s) => s.mode === 'build')
+  const installChoice = useInstallChoice()
   return (
     <header className="shell-header">
       <div className="shell-title">
@@ -42,6 +44,13 @@ export function Header() {
             onClick={openWelcome}
           >
             ?
+          </button>
+        )}
+        {/* Chrome offers installing only after a tap and some time on the page, usually after
+            the welcome card has closed: so the offer shows here too, on every visit */}
+        {installChoice === 'button' && (
+          <button type="button" className="install-chip" onClick={installApp}>
+            Install
           </button>
         )}
       </div>

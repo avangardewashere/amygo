@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { APP_NAME } from './brand'
+import { installApp, useInstallChoice } from './install'
 import { useWelcome } from './tabStore'
 import { closeWelcome, pickAnExercise } from './tabs'
 
@@ -11,6 +12,24 @@ const LINES = [
   'Walk up to a machine and tap its label (or press E) to use it. Or pick an exercise from the list.',
   'Your sets are saved on this device only. Nothing is sent anywhere.',
 ]
+
+export const INSTALL_FROM_MENU = `Not installed yet? Use your browser's menu: Install app, or Add to Home screen.`
+
+// Installing: Chrome's own install sheet behind a button when it offers one;
+// otherwise the browser's menu (Firefox, or Chrome before it's ready); nothing
+// in the installed app itself
+function InstallLine() {
+  const choice = useInstallChoice()
+  if (choice === 'none') return null
+  if (choice === 'button')
+    return (
+      <button type="button" className="list-button welcome-install" onClick={installApp}>
+        Install {APP_NAME}
+      </button>
+    )
+  // (Worded for someone who may have installed it already: in a plain tab, the browser can't tell us)
+  return <p className="welcome-install-note">{INSTALL_FROM_MENU}</p>
+}
 
 // The welcome card, over the gym on a first visit (and from the header's "?").
 // A dim layer behind it keeps taps and drags off the gym, and the gym itself is
@@ -45,6 +64,7 @@ export function Welcome() {
             Look around
           </button>
         </div>
+        <InstallLine />
       </section>
     </div>
   )

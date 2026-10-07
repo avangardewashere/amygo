@@ -467,7 +467,41 @@ On the desktop, Chrome's install icon in the address bar (or the card's button) 
 - **The installed app has no address bar,** so `?perf` only works in a browser tab. iOS gets the apple touch icon but is
   never a required check.
 
-**Summary:** _(written when the block is done)_
+**Status: done** (2026-10-07, on branch `v8-go-public`; not yet pushed). 142 tests passing (6 new: V8B3-T1..T6, with
+V8B1-T6/T7 updated). **Built:** `public/manifest.webmanifest`; four PNG icons in `public/icons/` drawn by
+`scripts/make-icons.mjs` (its own PNG writer with Node's zlib, each pixel sampled 4 × 4 times; `--check` compares the
+decoded pixels, so a different zlib can't make it fail); the manifest and apple-icon links in `index.html`;
+`src/shell/install.ts` (Chrome's install offer kept for our button, the install sheet, keeping data once installed),
+started by `startApp()`; the Install button or the "browser's menu" line on the welcome card. The offline copy picked
+up the manifest and the icons by itself (9 → 14 files), as Block 2 intended. Shell: 14.3 → 14.7 KB (budget 60).
+
+**Caught before it could ship:** a test named Node's `Buffer`, which the app's type settings don't include, so the type
+check failed, and with it `npm run build`; Vercel would have refused that deploy (keeping the old version live).
+
+**A review** (3 angles this time, to keep the cost down after Block 2's stop; 2 skeptics per finding; all finished)
+confirmed 2 findings and split on 4; all six acted on:
+- **Confirmed: on Android the Install button was almost never seen,** and keeping Chrome's offer for it also hid
+  Chrome's own install bar. Chrome offers only after a tap and some 30 seconds on the page, by when a new visitor has
+  usually closed the welcome card, and later visits never reopen it. **Changed from this plan:** an **Install** button now
+  also shows in the header, beside "?", on every tab and every visit, whenever Chrome has offered.
+- **Confirmed: the PNG test couldn't catch a broken PNG writer** (a skeptic wrote wrong checksums; Chrome couldn't decode
+  the file; the tests passed). T2 now reads each PNG as strictly as a browser: every checksum, the header's fields, the
+  end marker, each row.
+- **Split, acted on:** after accepting Chrome's install sheet the card said "use your browser's menu" (now it follows
+  Chrome's answer, and the line reads "Not installed yet? Use your browser's menu: Install app, or Add to Home screen.");
+  only the maskable icon's pixels were checked (the ordinary icons' corners and mark, and the apple icon, now are, with
+  numbers worked out in the test, not by the script); every pretend page was a first visit (the installed app is always a
+  return visit; T4 and T6 now cover it); a commented-out manifest link passed (T3 now reads the built page without
+  comments).
+
+**Checked in the browser** on the production build: the manifest is served as `application/manifest+json`; all four icons
+load at their exact sizes; the offline copy keeps the manifest and every icon; the welcome card shows the menu line
+(Chrome hadn't offered in the browser pane, as is usual for an embedded browser); with a stand-in offer the Install
+button appeared, opened the sheet exactly once, and after "installed" nothing showed. The phone check (installing from
+the public link) waits for the push. **This completes v8.**
+
+**Summary:** Amygo installs as an app with its own icon, opening full screen and working offline; the Install button
+shows whenever Chrome offers it, and once installed Amygo asks to keep its data. That finishes v8.
 
 ---
 
