@@ -275,6 +275,12 @@ Checked in the browser: the readout appears with `?perf`, and forcing each level
 shadows off. So the shadow pass alone is about 245 draws, and the triangle count is small: if the phone is slow, the number
 of separate parts drawn (draws) is the likely cause, not triangles.
 
+**Update 2026-10-07: the phone check (V5B3-T4) is done.** You checked the app on your Android phone, on `master` at
+`47e7c27`: the full 28-piece gym (layout plan L1–L2) with v6's tabs and v7's workout log on top, served with
+`npm run phone`. Your report: good so far. No readout numbers (frames per second, quality level) were taken, so the 30 fps
+target is confirmed by how it felt rather than by the readout; if speed ever needs comparing, the readout is there
+(`?perf`). No fixes were needed. **This completes v5.**
+
 **Summary:** The gym is measured and tuned on a real phone, with a speed readout and automatic quality step-down, so it stays
 smooth with all 12 machines. That finishes v5 and the backlog.
 

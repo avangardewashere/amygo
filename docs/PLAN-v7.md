@@ -257,6 +257,9 @@ the live card, and Home showed the person curling; leaving the tab closed the pa
 nothing visible (the browser's leftover entry can be unmarked, not removed). The optional Android check has not been
 done. **This completes v7.**
 
+**Update 2026-10-07: checked on Android.** You checked the finished v7 on your Android phone (`master` at `47e7c27`, via
+`npm run phone`) and reported it good so far. No readout numbers were taken.
+
 **Summary:** Each exercise on the list now shows when you last did it, and its History page shows last time, best and
 every set, with Start; Android's back gesture closes the page instead of leaving the app. That finishes v7.
 

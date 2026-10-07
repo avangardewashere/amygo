@@ -209,6 +209,10 @@ three.js at about 161 ms, after the shell was running; then the gym appeared, wi
 can't throttle the network, so the "Slow 3G" part wasn't done as written; the download order shows the same thing. The
 optional Android check has not been done. **This completes v6.**
 
+**Update 2026-10-07: checked on Android.** You checked the app on your Android phone, with v7 on top (`master` at
+`47e7c27`, via `npm run phone`), and reported it good so far. That is also the re-check of v5's phone numbers this plan
+asked for, once the shell was in (no readout numbers were taken; see v5 Block 3 in `PLAN-v4-v5.md`).
+
 **Summary:** The app paints its shell first and loads the 3D after, with a build-time budget that keeps the shell small.
 That finishes v6.
 
