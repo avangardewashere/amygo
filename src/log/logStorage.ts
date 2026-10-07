@@ -4,19 +4,10 @@
 // Each saved set is checked on its own, so one damaged entry doesn't cost the rest.
 import { EXERCISES } from '../exercises/catalog'
 import type { LoggedSet } from './sets'
+import { storage } from '../lib/storage'
 
 export const LOG_KEY = 'gym3d.log'
 export const LOG_VERSION = 1
-
-// The browser's storage, or null where there is none (private browsing can
-// block it, and even reading the property can throw)
-function storage(): Storage | null {
-  try {
-    return globalThis.localStorage ?? null
-  } catch {
-    return null
-  }
-}
 
 // Save quietly: if storage is full or blocked, the sets are still listed until the page closes
 export function saveLog(sets: LoggedSet[]) {

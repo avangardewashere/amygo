@@ -6,6 +6,7 @@
 // `from`/`to` run left to right along the wall (0 = its middle), `bottom`/`top`
 // are heights off the floor. On the back wall, "along" is the same as world x.
 import { ROOM } from './dimensions'
+import { APP_NAME } from '../shell/brand'
 
 const { width: W, depth: D, height: H } = ROOM
 
@@ -107,7 +108,7 @@ export type WallArt = {
   zone?: 'freeWeights' | 'cardio' | 'strength' // which part of the gym it names
 }
 
-export const GYM_NAME = 'AMYGO' // D6
+export const GYM_NAME = APP_NAME.toUpperCase() // the painted name, from the one app name (v8)
 
 const PAINT = { dark: '#2b2d31', light: '#ece6da', accent: '#e4572e' } as const
 

@@ -225,7 +225,44 @@ shows this version on any phone, on mobile data, anywhere.
 - **Public means public.** The repo already is: its code, plans, and commit author names and emails. Nothing in it is
   secret (no keys, no `.env`). The link adds the running app.
 
-**Summary:** _(written when the block is done)_
+**Status: done** (2026-10-07, on branch `v8-go-public`; not yet pushed). 129 tests passing (7 new: V8B1-T1..T7), each
+checked to fail when the behaviour it guards is broken (25 breaks tried, all caught). **The link:** you imported the repo
+into Vercel before this block, and https://amygo.vercel.app went live serving `master` at `64707a5`. I opened it: https,
+the gym and all three tabs load, no console errors, and its files carry the same fingerprints as the laptop's build (so
+Vercel's Linux build matched). It still says "Gym 3D" until this block is pushed. **Built:** `src/shell/brand.ts` (the
+name), `src/lib/storage.ts` (the one storage helper), `src/shell/firstVisit.ts`, `src/shell/Welcome.tsx`, the welcome's
+open/close/Escape in `src/shell/tabs.ts`, `vercel.json`, `"engines": { "node": "24.x" }`, the name `amygo` in both
+package files, `scripts/brand-mark.mjs` + `scripts/make-icons.mjs` (the new `favicon.svg` is 628 bytes, down from Vite's
+9.5 KB; `--check` mode is what T7 runs), and the README's links. Shell: 13.3 → 13.9 KB compressed (budget 60).
+
+**A multi-agent review** (5 angles, each finding checked by 2 skeptics trying to disprove it; 31 agents) confirmed 9
+findings and split on 1. All acted on:
+- **Escape that closed the card also stopped your exercise** (found from 4 angles, reproduced by a skeptic): the card's
+  listener closed it first, so the gym's own Escape listener saw "nothing over the gym" and took the same key press as
+  "stop". The card's Escape now runs first and goes no further; T4 starts a set, opens "?", presses Escape and checks the
+  set is still running (and the same with an item's menu open).
+- **A key held while the card opened** came back on the next key release, so the person walked behind the card. Opening
+  the card (or leaving Home) now lets go of the held keys themselves (`releaseKeys()` in `src/player/input.ts`).
+- **The lockfile lacked the new Node-version entry,** so the next `npm install` would quietly have changed it. Added
+  exactly what npm writes (checked by running npm in a scratch copy); T5 keeps the two files in step.
+- **"Tap a machine" was wrong on phones**: you walk up to a machine and tap its label. The card and the header's phone
+  hint now say so.
+- **In landscape the card opened scrolled past its own title.** Focus now goes to the title without scrolling.
+- **Test gaps:** T3 now presses B after the card closes; T6 checks the files the app asks for folder by folder (a
+  skeptic showed `Models/man.glb` would pass on Windows and fail as a 404 on Vercel).
+
+**Changed from this plan:** focus on opening goes to the card's title (not "Pick an exercise"), for the landscape fix
+above and so screen readers read the card from the top. The README links both the live app and the code. **Found
+while red-checking:** an import spelt with the wrong capitals (`TabStore` for `tabStore`) still works on Windows, but
+Vite then loads two separate copies of that file, so the app quietly gets two tab stores; T6 is what catches it.
+**Checked in the browser:** a first visit at 360 px (the card fits, no sideways scroll, the gym inert and its joystick and
+Build button gone); Pick an exercise opened Exercises and was remembered after a reload; "?" reopened the card and
+Escape closed it with focus back on "?"; at 740 × 360 the card opened at its top; mid-curl, "?" then Escape kept the
+curls counting. The icon reads at 16 px (an orange A) and shows its dumbbell from 32 px, on light and dark tab bars. No
+console errors. The optional Android check waits for the push.
+
+**Summary:** Amygo now says its own name everywhere, with its own icon, greets a first-time visitor with a short card, and
+carries the settings Vercel needs; once pushed, the public link shows all of it.
 
 ### Block 2: Works with no signal
 

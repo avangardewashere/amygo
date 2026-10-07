@@ -1,6 +1,8 @@
-# Gym 3D
+# Amygo
 
-A 3D gym built with React + Three.js, mobile-friendly.
+A 3D gym you can train in, with a workout log that stays on your device. Built with React + Three.js, made for phones too.
+
+**Try it:** https://amygo.vercel.app · Code: https://github.com/avangardewashere/amygo
 
 ## Run it
 

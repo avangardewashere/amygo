@@ -37,6 +37,34 @@ body,
   background: #16171a;
 }
 
+/* The name, with the welcome card's "?" beside it */
+.shell-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.help-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.12);
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* A bigger target for a finger than it looks */
+@media (pointer: coarse) {
+  .help-button {
+    width: 36px;
+    height: 36px;
+  }
+}
+
 .shell-header h1 {
   margin: 0;
   font-size: clamp(1.1rem, 3.5vw, 1.4rem);
@@ -63,6 +91,12 @@ body,
   position: relative;
   flex: 1;
   min-height: 0;
+}
+
+/* The gym and its own controls (joystick, build bar); fills the stage */
+.gym-layer {
+  position: absolute;
+  inset: 0;
 }
 
 .page {
@@ -700,4 +734,58 @@ body,
 .history-stats strong,
 .last-line {
   text-wrap: balance;
+}
+
+/* ---------- Welcome card ---------- */
+
+/* A dim layer over the gym (above its floating popups, like the pages): taps and drags stop here */
+.welcome-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  padding: 16px max(16px, env(safe-area-inset-left));
+  overflow-y: auto;
+  background: rgb(10 11 12 / 0.62);
+}
+
+.welcome-card {
+  width: min(100%, 380px);
+  padding: 20px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 16px;
+  background: #16171a;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.45);
+}
+
+.welcome-card h2 {
+  margin: 0 0 10px;
+  font-size: 1.25rem;
+}
+
+.welcome-card h2:focus {
+  outline: none; /* focused for screen readers and keyboards, not to be drawn */
+}
+
+.welcome-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding-left: 18px;
+  line-height: 1.4;
+}
+
+.welcome-card li::marker {
+  color: #e4572e;
+}
+
+.welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.welcome-actions .list-button {
+  flex: 1 1 140px;
 }

@@ -33,21 +33,29 @@ const KEYS: Record<string, [number, number]> = {
   ArrowRight: [1, 0],
 }
 
+// The walking keys being held down right now
+const held = new Set<string>()
+
+function update() {
+  let x = 0
+  let y = 0
+  for (const code of held) {
+    x += KEYS[code][0]
+    y += KEYS[code][1]
+  }
+  input.keyboard.x = Math.sign(x)
+  input.keyboard.y = Math.sign(y)
+}
+
+// Let go of every walking key (the gym going out of reach). Without this, a key
+// still held would come back on the next key release and walk the person on.
+export function releaseKeys() {
+  held.clear()
+  update()
+}
+
 // Starts listening to WASD / arrow keys. Returns a function that stops listening.
 export function listenToKeyboard() {
-  const held = new Set<string>()
-
-  const update = () => {
-    let x = 0
-    let y = 0
-    for (const code of held) {
-      x += KEYS[code][0]
-      y += KEYS[code][1]
-    }
-    input.keyboard.x = Math.sign(x)
-    input.keyboard.y = Math.sign(y)
-  }
-
   const onDown = (e: KeyboardEvent) => {
     if (!(e.code in KEYS)) return
     if (!onHome()) return // the gym isn't in front: don't walk (key-ups still count, below)
@@ -60,10 +68,7 @@ export function listenToKeyboard() {
     update()
   }
   // If the window loses focus mid-press, the key-up never arrives: stop walking
-  const onBlur = () => {
-    held.clear()
-    update()
-  }
+  const onBlur = releaseKeys
 
   window.addEventListener('keydown', onDown)
   window.addEventListener('keyup', onUp)

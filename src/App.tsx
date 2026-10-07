@@ -8,7 +8,8 @@ import { Header } from './shell/Header'
 import { TabBar } from './shell/TabBar'
 import { ExercisesPage } from './shell/ExercisesPage'
 import { TodayPage } from './shell/TodayPage'
-import { useTab } from './shell/tabStore'
+import { useTab, useWelcome } from './shell/tabStore'
+import { Welcome } from './shell/Welcome'
 
 // Add ?perf to the address to see the speed readout
 const SHOW_PERF = perfEnabled(window.location.search)
@@ -25,16 +26,21 @@ export default function App() {
   const tab = useTab()
   const home = tab === 'home'
   const building = useBuild((s) => s.mode === 'build')
+  const welcome = useWelcome()
 
   return (
     <main className="app">
       <Header />
       <div className="stage">
-        <Suspense fallback={<p className="gym-loading">{LOADING_TEXT}</p>}>
-          <GymScene />
-        </Suspense>
-        {home && !building && <Joystick />}
-        {home && <BuildBar />}
+        {/* The gym: out of reach (inert) while the welcome card is over it */}
+        <div className="gym-layer" inert={welcome}>
+          <Suspense fallback={<p className="gym-loading">{LOADING_TEXT}</p>}>
+            <GymScene />
+          </Suspense>
+          {home && !building && !welcome && <Joystick />}
+          {home && !welcome && <BuildBar />}
+        </div>
+        {home && <Welcome />}
         {tab === 'exercises' && <ExercisesPage />}
         {tab === 'today' && <TodayPage />}
         {SHOW_PERF && <PerfReadout />}

@@ -1,26 +1,70 @@
 // Switching pages, and what has to happen when the gym goes out of view.
 // Also an exercise's history page, the one page inside a tab, and the back
-// gesture that closes it.
+// gesture that closes it; and the welcome card over the gym.
 import { endDrag, getBuild, toggleBuildMode } from '../build/buildStore'
 import { EXERCISES, type ExerciseKind } from '../exercises/catalog'
-import { input } from '../player/input'
-import { getHistoryKind, getTab, setHistoryKind, setTab, type Tab } from './tabStore'
+import { input, releaseKeys } from '../player/input'
+import { rememberWelcomed } from './firstVisit'
+import { getHistoryKind, getTab, getWelcome, setHistoryKind, setTab, setWelcome, type Tab } from './tabStore'
+
+// The gym goes out of reach (another page, or the welcome card over it): finish
+// any drag (a piece dropped somewhere taken snaps back), leave build mode, and
+// let go of movement, so nothing is left half-done and the person doesn't walk
+// on when the gym comes back
+function letGoOfTheGym() {
+  if (getBuild().drag) endDrag()
+  if (getBuild().mode === 'build') toggleBuildMode()
+  releaseKeys()
+  input.joystick.x = 0
+  input.joystick.y = 0
+}
 
 export function openTab(tab: Tab) {
   if (tab === getTab()) return
   closeHistory() // a history page belongs to its tab: leaving closes it
-  if (tab !== 'home') {
-    // Leaving the gym: finish any drag (a piece dropped somewhere taken snaps
-    // back), and leave build mode, so nothing is left half-done out of view
-    if (getBuild().drag) endDrag()
-    if (getBuild().mode === 'build') toggleBuildMode()
-    // Let go of movement, so the person doesn't walk on when the gym comes back
-    input.keyboard.x = 0
-    input.keyboard.y = 0
-    input.joystick.x = 0
-    input.joystick.y = 0
-  }
+  closeWelcome({ returnFocus: false }) // and so does the welcome (that counts as seen)
+  if (tab !== 'home') letGoOfTheGym()
   setTab(tab)
+}
+
+// ---------- The welcome card ----------
+
+// Focus an element by id, where there is a page (the tests run without one)
+const focusOn = (id: string) => globalThis.document?.getElementById(id)?.focus()
+
+// The header's "?" button (focus comes back to it when the card closes)
+export const WELCOME_BUTTON_ID = 'welcome-open'
+
+// Open the card over the gym (the header's "?"; a first visit opens it at start-up)
+export function openWelcome() {
+  openTab('home')
+  letGoOfTheGym()
+  setWelcome(true)
+}
+
+// Close it: "Look around", or Escape. Either way it counts as seen.
+export function closeWelcome({ returnFocus = true } = {}) {
+  if (!getWelcome()) return
+  setWelcome(false)
+  rememberWelcomed()
+  if (returnFocus) focusOn(WELCOME_BUTTON_ID)
+}
+
+// "Pick an exercise": off to the Exercises list (which closes the card)
+export const pickAnExercise = () => openTab('exercises')
+
+// Escape closes the card (while it's open, the gym's own keys are off: see onHome).
+// That Escape is used up here: the gym also listens for Escape (it stops an
+// exercise), and once the card is closed it would think the key was for it. So
+// this listener runs first (capture) and the key goes no further.
+export function listenToWelcomeKeys() {
+  const onKey = (event: KeyboardEvent) => {
+    if (event.code !== 'Escape' || !getWelcome()) return
+    event.stopImmediatePropagation()
+    closeWelcome()
+  }
+  window.addEventListener('keydown', onKey, { capture: true })
+  return () => window.removeEventListener('keydown', onKey, { capture: true })
 }
 
 // ---------- An exercise's history page ----------

@@ -7,21 +7,12 @@
 // move pieces the gym already has, and anything that doesn't check out is
 // ignored in favour of the starting layout.
 import type { Furniture } from './buildStore'
+import { storage } from '../lib/storage'
 
 export const LAYOUT_KEY = 'gym3d.layout'
 // 2: the zoned 28-piece gym (L1). A version-1 save placed the old 11 pieces
 // where they would now land on top of new ones, so it is ignored once.
 export const LAYOUT_VERSION = 2
-
-// The browser's storage, or null where there is none (private browsing can
-// block it, and even reading the property can throw)
-function storage(): Storage | null {
-  try {
-    return globalThis.localStorage ?? null
-  } catch {
-    return null
-  }
-}
 
 export function readSavedLayout(): string | null {
   try {

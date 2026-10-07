@@ -12,7 +12,7 @@ export const TABS: { id: Tab; label: string }[] = [
   { id: 'today', label: 'Today' },
 ]
 
-const store = createStore({ tab: 'home' as Tab, history: null as ExerciseKind | null })
+const store = createStore({ tab: 'home' as Tab, history: null as ExerciseKind | null, welcome: false })
 
 export const useTab = () => store.useSelect((s) => s.tab)
 export const getTab = () => store.get().tab
@@ -23,8 +23,14 @@ export const useHistoryKind = () => store.useSelect((s) => s.history)
 export const getHistoryKind = () => store.get().history
 export const setHistoryKind = (history: ExerciseKind | null) => store.set({ history })
 
-// Is the gym the page in front? (Its keys and joystick only work then.)
-export const onHome = () => store.get().tab === 'home'
+// Is the welcome card open over the gym?
+export const useWelcome = () => store.useSelect((s) => s.welcome)
+export const getWelcome = () => store.get().welcome
+export const setWelcome = (welcome: boolean) => store.set({ welcome })
+
+// Is the gym the page in front, with nothing over it? (Its keys and joystick
+// only work then: every key handler asks this one question.)
+export const onHome = () => store.get().tab === 'home' && !store.get().welcome
 
 // The gym keeps drawing only while it's in front. Its canvas stays mounted on
 // other pages (rebuilding a WebGL scene is a visible stall on phones), but with
