@@ -57,7 +57,8 @@ describe('History by day', () => {
     // In London, clocks go forward on 29 March 2026: that day has 23 hours
     // (Node's own settings; the app's types don't include Node, so reached through globalThis)
     const env = (globalThis as unknown as { process: { env: Record<string, string | undefined> } }).process.env
-    const zone = env.TZ
+    // (put back by name afterwards: on Windows, deleting TZ doesn't bring the old zone back)
+    const zone = env.TZ ?? Intl.DateTimeFormat().resolvedOptions().timeZone
     env.TZ = 'Europe/London'
     try {
       const sets = [curls(at(2026, 3, 29, 0, 30)), curls(at(2026, 3, 29, 23, 30))]

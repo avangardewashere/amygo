@@ -96,10 +96,13 @@ for this plan; run alone, the file passes. One `npm test` at a time per folder.
 
 ### Block 1: Back up and restore
 
-**What you'll see:** at the bottom of the Today page, next to Clear history, two buttons: **Back up** and **Restore**.
-Back up downloads `amygo-log-2026-10-07.json`. Restore opens the phone's file picker; pick a backup and a line appears:
-"Added 42 sets · 8 already here". Pick a file that isn't an Amygo backup and it says so, and nothing changes. Nothing is
-sent anywhere: the file goes from the app to your Downloads folder and back.
+**What you'll see** (as built; the first draft had just two buttons next to Clear history): at the bottom of the Today
+page, a **Your log** section: one line saying the log is saved in this browser only, then **Back up** and **Restore**, a
+result line under them, and Clear history on its own below. Back up downloads `amygo-log-2026-10-07.json` (it shows once
+there are sets); Restore is always there, because a new browser with no sets is exactly where a backup arrives. Restore
+opens the phone's file picker; pick a backup and the line reads "Added 42 sets · 8 already here · backup made Yesterday,
+21:10". Pick a file that isn't an Amygo backup and it says so, and nothing changes. Nothing is sent anywhere: the file
+goes from the app to your Downloads folder and back.
 
 **How:**
 - **The file** (per D2): `{ app: "amygo", version: 1, exportedAt, sets }`, in a new `src/log/backup.ts` with no React in
@@ -131,6 +134,57 @@ Today page shows the old days under Earlier. Restore the same file again: "Added
 
 **Summary:** The log can leave the browser as a file and come back into any browser without doubling a set, which also
 moves your phone's sets to the public link.
+
+**Status: done** (2026-10-08, on branch `v9-log-you-keep`; not yet committed). 150 tests passing (8 new: V9B1-T1..T8;
+V7B2-T2 fixed, see below). **Built:** `src/log/backup.ts` (the file: its name, its text with one set per line, the check
+on the way back in, and the words after Back up and Restore); `checkedSet`/`checkedSets`, `mergeSets` and `keepNewest`
+in `sets.ts` (the entry check moved there from `logStorage.ts`, so the saved log and a backup are checked by the same
+code; numbers that don't belong to an exercise are left behind, and numbers a newer Amygo adds, like Block 2's `kg`,
+travel untouched); `restoreBackup`, `restoreFile`, `backUpLog` and `followOtherWindows` in `logStore.ts`;
+`src/lib/files.ts` (the download, and emptying the picker so the same file can be picked twice); the **Your log**
+section on the Today page. `saveLog` now says whether it saved, so a restore in a browser that won't keep it says so.
+Shell: 14.7 → 16.3 KB (budget 60).
+
+**A review** (3 angles, one skeptic per finding; 9 of 12 findings checked, the 3 left over were acted on anyway) confirmed
+5, all low once checked, and the build changed for each:
+- **Two windows of Amygo** (the installed app and a Chrome tab share one storage) could write over each other: a stale
+  tab finishing one set would have wiped a restore made in the other. Each window now takes the other's saves as they
+  happen (`followOtherWindows`, started by `startApp`); V9B1-T8 covers it. The gap was there since v7; restore made it
+  costlier.
+- **Back up said "Saved"** before the browser had saved anything (and a second backup the same day lands as
+  "… (1).json"). It now says "Backing up 48 sets as amygo-log-2026-10-08.json. Look in your downloads; a second backup the
+  same day may end in (1)." **Restore now names the backup it read** ("backup made Yesterday, 21:10"), so picking an
+  older file by mistake shows.
+- **At the 5,000 cap** the counts were taken before the cut, so "Added 30" could mean nothing arrived. They're now taken
+  after: "too old to keep" (the file's) and "of the oldest here let go" (this browser's own) are told apart, and a restore
+  that changes nothing saves nothing.
+- **After a big restore the result line ended up far below the new days**, out of sight; it now scrolls into view, and
+  the same result twice is announced again (cleared, then shown a moment later).
+- **A test left the time zone broken** for the tests after it (putting back an unset zone wrote the text "undefined",
+  which is UTC). Both V9B1-T6 and the older V7B2-T2, which had the same slip, now put the zone back by its name (on
+  Windows, removing the setting doesn't bring the old zone back either). T6 borrows Pacific/Auckland, not the laptop's
+  own zone, so its last check can tell whether the zone really was put back.
+- Left over, acted on: the Back up button's work is now tested with a log of several days, the picker reset is tested,
+  and storage that throws on being read at all (Chrome with site data blocked) is covered.
+
+**A second check, of the fixes** (2 reviewers, one skeptic per finding): 2 of 5 findings held, both in the tests. The
+Block 1 tests reload the app's code several times each and could pass Vitest's 5-second limit when the laptop is busy
+(it happened once in a full run while other work was going on), so they now allow 30 seconds, as the repo's other slow
+tests do, and a test backup file is made without loading an app at all. And T6's zone check couldn't fail on this
+laptop (see the time zone point above).
+
+**Red-checks:** 42 deliberate breaks, one at a time (39, then 3 more for the reworked T6); every one made a test fail.
+(One run also failed the older V7B3-T1 once; run alone, twice, it passed: the first test in that file loads the whole
+app and timed out under the load of the run, not because of the break.)
+
+**Checked in the browser** (dev server, 360 px wide): Back up made `amygo-log-2026-10-08.json` with every set; after Clear
+history, Restore brought 60 sets back onto 30 days and scrolled the result into view; the same file again said "Added 0
+sets · 60 already here"; a file that isn't a backup was refused with nothing changed; a second tab, never reloaded,
+followed the first tab's Clear history and restore, and its own Remove kept the restored sets. No console errors.
+
+**Your phone check (optional):** at the laptop's Wi-Fi address (this branch's dev server running), Back up; Chrome may
+warn about a download on a plain http address, so choose Download or Keep. Then at amygo.vercel.app (once this block is
+pushed), Today → Restore → pick the file: the old days appear under Earlier.
 
 ### Block 2: Weights in kg
 

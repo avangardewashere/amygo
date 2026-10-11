@@ -1,6 +1,6 @@
 // What the app switches on once, before it's drawn. main.tsx calls startApp(),
 // and the tests call the very same function, so what they check is what runs.
-import { startLogging } from '../log/logStore'
+import { followOtherWindows, startLogging } from '../log/logStore'
 import { isFirstVisit } from './firstVisit'
 import { listenForInstall } from './install'
 import { setWelcome } from './tabStore'
@@ -11,6 +11,8 @@ export function startApp() {
   if (isFirstVisit()) setWelcome(true)
   // Save each set as it finishes (see the Today tab)
   const stopLogging = startLogging()
+  // …and take sets saved in another Amygo window (the installed app and a tab share them)
+  const stopFollowing = followOtherWindows()
   // Android's back gesture (and Escape) closes an exercise's history page
   const stopBack = listenToBack()
   // Escape closes the welcome card
@@ -19,6 +21,7 @@ export function startApp() {
   const stopInstall = listenForInstall()
   return () => {
     stopLogging()
+    stopFollowing()
     stopBack()
     stopWelcomeKeys()
     stopInstall()

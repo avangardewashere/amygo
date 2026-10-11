@@ -644,6 +644,24 @@ body,
   background: rgb(255 255 255 / 0.03);
 }
 
+/* The log's tools: Back up and Restore, what they did, then Clear history apart from them */
+.log-tools {
+  margin-top: 8px;
+}
+
+.log-tools-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.log-tools-result {
+  margin: 10px 0 0;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .clear-history {
   display: block;
   margin: 28px auto 8px;

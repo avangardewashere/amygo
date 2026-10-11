@@ -47,6 +47,74 @@ export function finishedPart(activity: Activity, now: number, endedAt: number): 
   return { kind, endedAt, seconds: cents(seconds), reps }
 }
 
+const isCount = (value: unknown) => Number.isInteger(value) && (value as number) >= 0
+const isAmount = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0
+const KNOWN_FIELDS = new Set(['id', 'kind', 'endedAt', 'seconds', 'reps', 'meters', 'strokes'])
+
+// A stored entry (from this browser's log or a backup file) as a set, or null
+// if it isn't a real one: a known exercise, a time, and the numbers that
+// exercise records (reps for strength; distance for cardio; strokes too on the
+// rower). Numbers that don't belong to its exercise are left behind; numbers a
+// newer Amygo adds (a weight, say) come along untouched.
+export function checkedSet(entry: unknown): LoggedSet | null {
+  if (typeof entry !== 'object' || entry === null) return null
+  const stored = entry as Record<string, unknown>
+  if (typeof stored.id !== 'string' || !stored.id) return null
+  if (typeof stored.kind !== 'string' || !Object.hasOwn(EXERCISES, stored.kind)) return null
+  if (!isAmount(stored.endedAt) || !isAmount(stored.seconds)) return null
+  const kind = stored.kind as ExerciseKind
+  const set: LoggedSet = { id: stored.id, kind, endedAt: stored.endedAt as number, seconds: stored.seconds as number }
+  const { speed, strokes } = EXERCISES[kind]
+  if (!speed) {
+    if (!isCount(stored.reps)) return null
+    set.reps = stored.reps as number
+  } else {
+    if (!isAmount(stored.meters) || (strokes && !isCount(stored.strokes))) return null
+    set.meters = stored.meters as number
+    if (strokes) set.strokes = stored.strokes as number
+  }
+  const extra = set as Record<string, unknown>
+  for (const [field, value] of Object.entries(stored)) {
+    if (!KNOWN_FIELDS.has(field) && isAmount(value)) extra[field] = value
+  }
+  return set
+}
+
+// The real sets among stored entries, in their order, each id once; and how
+// many entries weren't sets (one damaged entry costs that set, not the rest)
+export function checkedSets(entries: unknown[]) {
+  const sets: LoggedSet[] = []
+  const ids = new Set<string>()
+  let skipped = 0
+  for (const entry of entries) {
+    const set = checkedSet(entry)
+    if (!set) skipped++
+    else if (!ids.has(set.id)) {
+      ids.add(set.id)
+      sets.push(set)
+    }
+  }
+  return { sets, skipped }
+}
+
+// A restore (decision D3: always a merge). Sets whose id is already here stay
+// exactly as they are here, even if the incoming copy differs; the rest are
+// added. The result is oldest first, as the log is saved.
+export function mergeSets(here: LoggedSet[], incoming: LoggedSet[]) {
+  const ids = new Set(here.map((set) => set.id))
+  const added = incoming.filter((set) => !ids.has(set.id) && ids.add(set.id))
+  return {
+    sets: [...here, ...added].sort((a, b) => a.endedAt - b.endedAt),
+    added,
+    already: incoming.length - added.length,
+  }
+}
+
+// At most `max` sets, oldest first: past it, the oldest go first
+export function keepNewest(sets: LoggedSet[], max: number) {
+  return sets.length > max ? [...sets].sort((a, b) => a.endedAt - b.endedAt).slice(-max) : sets
+}
+
 // The local calendar day a moment falls on, e.g. "2026-10-07". Built from the
 // local year, month and day (not from 24-hour blocks), so a day when the
 // clocks change is still one day (decision D7: a set belongs to the day it finished)

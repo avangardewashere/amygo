@@ -1,38 +1,24 @@
 // Keeping the workout log between visits, in this browser only (localStorage),
 // the same careful way as the furniture layout (build/layoutStorage.ts):
 // saving never breaks the app, and saved data is checked before it's trusted.
-// Each saved set is checked on its own, so one damaged entry doesn't cost the rest.
-import { EXERCISES } from '../exercises/catalog'
-import type { LoggedSet } from './sets'
+// Each saved set is checked on its own (checkedSets in sets.ts, which backups use
+// too), so one damaged entry doesn't cost the rest.
+import { checkedSets, type LoggedSet } from './sets'
 import { storage } from '../lib/storage'
 
 export const LOG_KEY = 'gym3d.log'
 export const LOG_VERSION = 1
 
-// Save quietly: if storage is full or blocked, the sets are still listed until the page closes
+// Save quietly: if storage is full or blocked, the sets are still listed until
+// the page closes. Returns whether it was saved.
 export function saveLog(sets: LoggedSet[]) {
   try {
-    storage()?.setItem(LOG_KEY, JSON.stringify({ version: LOG_VERSION, sets }))
+    const saved = storage()
+    saved?.setItem(LOG_KEY, JSON.stringify({ version: LOG_VERSION, sets }))
+    return saved !== null
   } catch {
-    // Nothing to do: the log is kept in memory for this visit
+    return false // Nothing to do: the log is kept in memory for this visit
   }
-}
-
-const isCount = (value: unknown) => Number.isInteger(value) && (value as number) >= 0
-const isAmount = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0
-
-// A saved entry that is a real set: a known exercise, a time, and the numbers
-// that exercise records (reps for strength; distance for cardio; strokes too on the rower)
-function isSet(entry: unknown): entry is LoggedSet {
-  if (typeof entry !== 'object' || entry === null) return false
-  const set = entry as Record<string, unknown>
-  if (typeof set.id !== 'string' || !set.id) return false
-  if (typeof set.kind !== 'string' || !Object.hasOwn(EXERCISES, set.kind)) return false
-  if (!isAmount(set.endedAt) || !isAmount(set.seconds)) return false
-  const { speed, strokes } = EXERCISES[set.kind as LoggedSet['kind']]
-  if (!speed) return isCount(set.reps)
-  if (!isAmount(set.meters)) return false
-  return strokes ? isCount(set.strokes) : true
 }
 
 // The saved sets that check out (oldest first, as saved). Anything unreadable
@@ -47,10 +33,5 @@ export function readSavedLog(): LoggedSet[] {
   if (!parsed || typeof parsed !== 'object') return []
   const saved = parsed as { version?: unknown; sets?: unknown }
   if (saved.version !== LOG_VERSION || !Array.isArray(saved.sets)) return []
-  const ids = new Set<string>()
-  return saved.sets.filter((entry): entry is LoggedSet => {
-    if (!isSet(entry) || ids.has(entry.id)) return false // (a repeated id is kept once)
-    ids.add(entry.id)
-    return true
-  })
+  return checkedSets(saved.sets).sets // (a repeated id is kept once)
 }

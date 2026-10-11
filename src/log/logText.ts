@@ -16,12 +16,15 @@ export function setNumbers(set: LoggedSet) {
 // How long it lasted, as on the popup: "0:29"
 export const setLength = (set: LoggedSet) => clock(set.seconds)
 
-// When it finished, on the device's clock: "at 14:05" (the "at" keeps it from
-// reading as another length next to "0:29")
-export function finishedAt(set: LoggedSet) {
-  const date = new Date(set.endedAt)
-  return `at ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
+// A moment on the device's clock: "14:05"
+export function timeOfDay(time: number) {
+  const date = new Date(time)
+  return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
 }
+
+// When it finished: "at 14:05" (the "at" keeps it from reading as another
+// length next to "0:29")
+export const finishedAt = (set: LoggedSet) => `at ${timeOfDay(set.endedAt)}`
 
 // "4 sets · 9 min" (under a minute in all: "1 set · 45 s")
 export function totalsText({ count, seconds }: { count: number; seconds: number }) {
