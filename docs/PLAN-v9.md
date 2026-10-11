@@ -135,7 +135,7 @@ Today page shows the old days under Earlier. Restore the same file again: "Added
 **Summary:** The log can leave the browser as a file and come back into any browser without doubling a set, which also
 moves your phone's sets to the public link.
 
-**Status: done** (2026-10-08, on branch `v9-log-you-keep`; not yet committed). 150 tests passing (8 new: V9B1-T1..T8;
+**Status: done** (built 2026-10-08 on branch `v9-log-you-keep`; committed 2026-10-11). 150 tests passing (8 new: V9B1-T1..T8;
 V7B2-T2 fixed, see below). **Built:** `src/log/backup.ts` (the file: its name, its text with one set per line, the check
 on the way back in, and the words after Back up and Restore); `checkedSet`/`checkedSets`, `mergeSets` and `keepNewest`
 in `sets.ts` (the entry check moved there from `logStorage.ts`, so the saved log and a backup are checked by the same
