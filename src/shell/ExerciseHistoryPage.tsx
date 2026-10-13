@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { EXERCISES, MACHINE_NAMES, type ExerciseKind } from '../exercises/catalog'
+import { LOAD_MEANS } from '../exercises/load'
 import { useBuild } from '../build/buildStore'
 import { startFromList, useGym } from '../interaction/gymStore'
 import { removeSet, useLog } from '../log/logStore'
 import { emptyHistory, finishedAt, setDay, setLength, setNumbers } from '../log/logText'
 import { bestSet, setsOf } from '../log/sets'
 import { NowDoing } from './NowDoing'
+import { WeightStepper } from './WeightStepper'
 import { useNow } from './clock'
 import { closeHistory } from './tabs'
 
@@ -21,7 +23,7 @@ export function ExerciseHistoryPage({ kind, now }: { kind: ExerciseKind; now?: n
   const items = useBuild((s) => s.items)
   const doing = useGym((s) => s.activity?.kind) === kind
   const holding = useGym((s) => s.holding)
-  const { name, machine } = EXERCISES[kind]
+  const { name, machine, load } = EXERCISES[kind]
   const available = items.some((item) => item.type === machine)
 
   // Focus moves to the page's title, so keyboards and screen readers start here
@@ -43,19 +45,24 @@ export function ExerciseHistoryPage({ kind, now }: { kind: ExerciseKind; now?: n
       <NowDoing />
       {holding && <p className="page-note">Put the dumbbell down first (on Home) to start an exercise.</p>}
       {!doing && (
-        <button
-          type="button"
-          className="list-button is-primary history-start"
-          disabled={!available || holding}
-          onClick={() => {
-            // The list's own Start; the page stays open, so the set appears here when finished.
-            // Start is replaced by the live card, so focus goes to the title (the next Tab is Finish).
-            startFromList(kind)
-            title.current?.focus()
-          }}
-        >
-          Start
-        </button>
+        <div className="history-start-row">
+          {/* The same weight picker as on the list, before Start as there: this Start uses it too */}
+          <WeightStepper kind={kind} />
+          <button
+            type="button"
+            className="list-button is-primary history-start"
+            disabled={!available || holding}
+            onClick={() => {
+              // The list's own Start; the page stays open, so the set appears here when finished.
+              // Start is replaced by the live card, so focus goes to the title (the next Tab is Finish).
+              startFromList(kind)
+              title.current?.focus()
+            }}
+          >
+            Start
+          </button>
+          {load && <small className="last-line weight-means">Weight: {LOAD_MEANS[load.of]}</small>}
+        </div>
       )}
 
       {mine.length === 0 || !best ? (

@@ -71,8 +71,13 @@ afterEach(() => {
 // (Each test reloads the app's code several times; a busy laptop can need more than Vitest's usual 5 s)
 describe('Back up and restore', { timeout: 30_000 }, () => {
   it('V9B1-T1: back up then restore into an empty log gives back the same sets, same ids, same numbers', async () => {
-    // (kg stands for a number a newer Amygo adds: it travels untouched)
-    const sets = [curls(at(2026, 9, 30, 9)), { ...curls(at(2026, 10, 1, 9), 8), kg: 10 } as LoggedSet, walk(at(2026, 10, 2, 7)), row(at(2026, 10, 6, 19))]
+    // (a weight, and `effort`, which stands for a number a newer Amygo adds: both travel untouched)
+    const sets = [
+      curls(at(2026, 9, 30, 9)),
+      { ...curls(at(2026, 10, 1, 9), 8), kg: 10, effort: 8 } as LoggedSet,
+      { ...walk(at(2026, 10, 2, 7)), effort: 6 } as LoggedSet,
+      row(at(2026, 10, 6, 19)),
+    ]
     const file = backupOf(sets)
 
     const phone = await openApp() // a browser with no sets yet

@@ -50,6 +50,13 @@ export type ExerciseKind =
   | 'cableRow'
   | 'pullup'
 
+// The weight an exercise is done with (decision D6), with the real increments
+// of each piece of kit: what the number means, its steps, and its range in kg
+export type Load = { of: 'dumbbell' | 'stack' | 'bar'; step: number; min: number; max: number }
+const DUMBBELLS: Load = { of: 'dumbbell', step: 1, min: 1, max: 50 } // each dumbbell
+const STACK: Load = { of: 'stack', step: 5, min: 5, max: 200 } // the pin in a machine's weight stack
+const BAR: Load = { of: 'bar', step: 2.5, min: 20, max: 300 } // the bar with its plates
+
 type Exercise = {
   machine: MachineType // which machine offers it
   name: string // label in the menu
@@ -62,29 +69,39 @@ type Exercise = {
   // Dumbbells in both hands, and how they're held: bar side to side ('across')
   // or pointing ahead ('forward')
   weights?: 'across' | 'forward'
+  // The weight picked before Start. None for cardio, or for pull-ups (bodyweight).
+  load?: Load
   standAt?: StandAt // overrides where the machine puts you
 }
 
 export const EXERCISES: Record<ExerciseKind, Exercise> = {
-  curl: { machine: 'dumbbellRack', name: 'Bicep curls', doing: 'Doing bicep curls', weights: 'across' },
+  curl: { machine: 'dumbbellRack', name: 'Bicep curls', doing: 'Doing bicep curls', weights: 'across', load: DUMBBELLS },
   lateral: {
     machine: 'dumbbellRack',
     name: 'Lateral raises (side fly)',
     doing: 'Doing lateral raises',
     weights: 'forward',
+    load: DUMBBELLS,
   },
   walk: { machine: 'treadmill', name: 'Walk', doing: 'Walking', speed: 1.5, stride: 0.8 },
   run: { machine: 'treadmill', name: 'Run', doing: 'Running', speed: 3, stride: 1.5 },
-  legPress: { machine: 'legPress', name: 'Leg press', doing: 'Doing leg presses' },
-  benchPress: { machine: 'bench', name: 'Dumbbell bench press', doing: 'Doing bench presses', weights: 'across' },
+  legPress: { machine: 'legPress', name: 'Leg press', doing: 'Doing leg presses', load: STACK },
+  benchPress: {
+    machine: 'bench',
+    name: 'Dumbbell bench press',
+    doing: 'Doing bench presses',
+    weights: 'across',
+    load: DUMBBELLS,
+  },
   shoulderPress: {
     machine: 'bench',
     name: 'Seated shoulder press',
     doing: 'Doing shoulder presses',
     weights: 'across',
+    load: DUMBBELLS,
     standAt: placeHips(SEATED_HIP), // sitting on the end of the bench instead of lying
   },
-  chestFly: { machine: 'chestFly', name: 'Chest fly', doing: 'Doing chest flies' },
+  chestFly: { machine: 'chestFly', name: 'Chest fly', doing: 'Doing chest flies', load: STACK },
   ride: { machine: 'bike', name: 'Easy ride', doing: 'Cycling', speed: 20 / 3.6, cadence: BIKE.cadence.easy },
   sprint: { machine: 'bike', name: 'Sprint', doing: 'Sprinting', speed: 32 / 3.6, cadence: BIKE.cadence.sprint },
   row: { machine: 'rower', name: 'Row', doing: 'Rowing', speed: ROWER.speed, strokes: true },
@@ -93,6 +110,7 @@ export const EXERCISES: Record<ExerciseKind, Exercise> = {
     name: 'Incline dumbbell press',
     doing: 'Doing incline presses',
     weights: 'across',
+    load: DUMBBELLS,
     backrest: ADJ.angles.incline,
     standAt: placeHips(hipsAgainstBackrest(ADJ.angles.incline)),
   },
@@ -101,20 +119,23 @@ export const EXERCISES: Record<ExerciseKind, Exercise> = {
     name: 'Seated curls',
     doing: 'Doing seated curls',
     weights: 'across',
+    load: DUMBBELLS,
     backrest: ADJ.angles.upright,
     standAt: placeHips(hipsAgainstBackrest(ADJ.angles.upright)),
   },
-  squat: { machine: 'squatRack', name: 'Back squat', doing: 'Doing back squats' },
+  squat: { machine: 'squatRack', name: 'Back squat', doing: 'Doing back squats', load: BAR },
   pushdown: {
     machine: 'cableMachine',
     name: 'Tricep pushdowns',
     doing: 'Doing tricep pushdowns',
+    load: STACK,
     standAt: { z: CABLE.pushdown.standZ, y: 0 }, // standing at the tower
   },
   cableRow: {
     machine: 'cableMachine',
     name: 'Cable rows',
     doing: 'Doing cable rows',
+    load: STACK,
     standAt: placeHips({ y: CABLE.row.hipY, z: CABLE.row.hipZ }), // on the low seat
   },
   pullup: {

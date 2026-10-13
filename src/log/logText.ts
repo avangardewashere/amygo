@@ -2,13 +2,18 @@
 // Kept apart from the page so they can be tested.
 import { clock } from '../interaction/activityText'
 import { EXERCISES, type ExerciseKind } from '../exercises/catalog'
+import { kgText } from '../exercises/load'
 import { dayKey, daysAgo, type LoggedSet } from './sets'
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`
 
-// What the set achieved: reps, or distance (with strokes on the rower)
+// What the set achieved: reps (with the weight, if it has one: "12 reps · 10 kg"),
+// or distance (with strokes on the rower)
 export function setNumbers(set: LoggedSet) {
-  if (set.reps !== undefined) return plural(set.reps, 'rep', 'reps')
+  if (set.reps !== undefined) {
+    const reps = plural(set.reps, 'rep', 'reps')
+    return set.kg === undefined ? reps : `${reps} · ${kgText(set.kg)}`
+  }
   const km = `${((set.meters ?? 0) / 1000).toFixed(2)} km`
   return set.strokes !== undefined ? `${plural(set.strokes, 'stroke', 'strokes')} · ${km}` : km
 }
@@ -50,7 +55,11 @@ export function dayLabel(key: string, now: number) {
 }
 
 // What a day's sets were, one exercise at a time in the order first done:
-// "Bicep curls 3 × 12 · Walk 1.20 km" (reps listed one by one when they differ: "12, 10, 8")
+// "Bicep curls 3 × 12 @ 10 kg · Walk 1.20 km". Reps are listed one by one when
+// they differ ("12, 10, 8 @ 10 kg"), each with its own weight when those differ
+// too ("12 @ 10 kg, 10 @ 12 kg"). Sets from before weights just have no "@";
+// next to sets that have one they say so ("12 (no weight), 10 @ 12 kg"), or the
+// weight after the list would read as theirs too.
 export function daySummary(sets: LoggedSet[]) {
   const byKind = new Map<LoggedSet['kind'], LoggedSet[]>()
   for (const set of [...sets].sort((a, b) => a.endedAt - b.endedAt)) {
@@ -64,7 +73,12 @@ export function daySummary(sets: LoggedSet[]) {
         return `${name} ${(meters / 1000).toFixed(2)} km`
       }
       const reps = done.map((set) => set.reps)
-      return reps.every((count) => count === reps[0]) ? `${name} ${reps.length} × ${reps[0]}` : `${name} ${reps.join(', ')}`
+      const at = (kg: number | undefined) => (kg === undefined ? '' : ` @ ${kgText(kg)}`)
+      if (!done.every((set) => set.kg === done[0].kg)) {
+        return `${name} ${done.map((set) => `${set.reps}${set.kg === undefined ? ' (no weight)' : at(set.kg)}`).join(', ')}`
+      }
+      const sets = reps.every((count) => count === reps[0]) ? `${reps.length} × ${reps[0]}` : reps.join(', ')
+      return `${name} ${sets}${at(done[0].kg)}`
     })
     .join(' · ')
 }

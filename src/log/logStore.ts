@@ -3,13 +3,32 @@
 // whenever an exercise ends, however it ends (Stop, E, walking away, build
 // mode, Finish, or starting something else), or changes pace.
 import { createStore } from '../lib/store'
+import type { ExerciseKind } from '../exercises/catalog'
+import { setLastUsed, type Weights } from '../exercises/weights'
 import { getGym, subscribeGym } from '../interaction/gymStore'
 import { downloadFile } from '../lib/files'
 import { LOG_KEY, readSavedLog, saveLog } from './logStorage'
 import { backedUpText, backupName, backupText, CANT_READ, MAX_BACKUP_BYTES, readBackup, TOO_BIG, type Restored } from './backup'
-import { finishedPart, keepNewest, mergeSets, type LoggedSet, type NewSet } from './sets'
+import { finishedPart, keepNewest, lastSets, mergeSets, type LoggedSet, type NewSet } from './sets'
 
 const store = createStore({ sets: readSavedLog() })
+
+// The weight picker is told what each exercise was last done with, so a row with
+// no weight picked in this browser starts from there (say, after a restore)
+function tellWeights(sets: LoggedSet[]) {
+  const last: Weights = {}
+  for (const [kind, set] of Object.entries(lastSets(sets))) {
+    if (set?.kg !== undefined) last[kind as ExerciseKind] = set.kg
+  }
+  setLastUsed(last)
+}
+tellWeights(store.get().sets)
+
+// The log as it now is, everywhere it's shown
+function show(sets: LoggedSet[]) {
+  store.set({ sets })
+  tellWeights(sets)
+}
 
 export const useLog = <S>(select: (s: { sets: LoggedSet[] }) => S) => store.useSelect(select)
 export const getLog = store.get
@@ -23,7 +42,7 @@ const newId = (endedAt: number) => `${endedAt.toString(36)}-${(made++).toString(
 
 // Show the new log at once, then save it (returns whether it was saved)
 function update(sets: LoggedSet[]) {
-  store.set({ sets })
+  show(sets)
   return saveLog(sets)
 }
 
@@ -102,7 +121,7 @@ export async function restoreFile(file: Blob) {
 export function followOtherWindows(target: Pick<EventTarget, 'addEventListener' | 'removeEventListener'> = window) {
   const onChange = (event: Event) => {
     const { key } = event as StorageEvent
-    if (key === LOG_KEY || key === null) store.set({ sets: readSavedLog() }) // (null: storage was cleared)
+    if (key === LOG_KEY || key === null) show(readSavedLog()) // (null: storage was cleared)
   }
   target.addEventListener('storage', onChange)
   return () => target.removeEventListener('storage', onChange)

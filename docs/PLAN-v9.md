@@ -188,10 +188,14 @@ pushed), Today → Restore → pick the file: the old days appear under Earlier.
 
 ### Block 2: Weights in kg
 
-**What you'll see:** on the Exercises list, every strength row (per D6) has a small **− 10 kg +** stepper next to Start.
-It remembers your last weight for that exercise. Start, and the popup in the gym says "Doing bicep curls · 10 kg". The
-saved set reads "12 reps · 10 kg", the day summary "Bicep curls 3 × 12 @ 10 kg", and an exercise's History marks the
-heaviest set as best. Old sets without a weight still show as they do today.
+**What you'll see** (as built): on the Exercises list, every strength row (per D6) has a small **− 10 kg +** stepper
+beside Start, and a line under the title says what the number means (each dumbbell, the stack on a machine, the bar with
+its plates). On a phone such a row takes two lines: the name with History, then the weight and Start together. It
+remembers your last weight for that exercise; where you haven't picked one in this browser it starts from the weight of
+that exercise's last logged set (so a restored log brings its weights along), and only the very first time from the
+minimum. Start, and the popup in the gym says "Doing bicep curls · 10 kg". The saved set reads "12 reps · 10 kg", the
+day summary "Bicep curls 3 × 12 @ 10 kg", and an exercise's History marks the heaviest set as best and has the same
+picker by its own Start. Old sets without a weight still show as they do today.
 
 **How:**
 - **The catalog says which rows get a weight** (per D6): a `load` entry per exercise, `{ of: 'dumbbell' | 'stack' | 'bar',
@@ -225,6 +229,72 @@ and the row still says 12 kg after a reload. The shell stays well under budget (
 
 **Summary:** Strength sets now carry a weight in kg, picked on the row before Start and remembered per exercise, and
 History knows the heaviest set is the best one.
+
+**Status: done** (built and committed 2026-10-14 on branch `v9-log-you-keep`). 158 tests passing (8 new: V9B2-T1..T8;
+V9B1-T1 and V7B3-T5 updated, see below). **Built:** the `load` table in `catalog.ts` (11 exercises; none for cardio or
+pull-ups); `src/exercises/load.ts` (steps, range, "10 kg"); `src/exercises/weights.ts` (the picks, saved as
+`gym3d.weights` and checked on the way back in); `kg` on `Activity`, set where every start goes through, so the list
+and the menu at the machine agree, and copied onto the saved set; the weight in the popup, the header, each set and the
+day summary; `bestSet` by weight, then reps; `src/shell/WeightStepper.tsx` on the Exercises rows and by Start on an
+exercise's own page. The log version is still 1, and old logs and Block 1 backups load unchanged. Shell: 16.3 → 17.3 KB
+(budget 60; this plan's guess of "under 17" was a little low, mostly because Block 1 came out bigger than guessed).
+
+**Changed from this plan:**
+- **A row with no weight picked starts from its last logged set's weight, and only then from its minimum.** The plan
+  said "starts at its minimum". But after a restore into another browser (Block 1's whole point) the row read "Last: 10
+  reps · 12 kg" beside "− 1 kg +", and one tap on Start would have saved 1 kg. The log now tells the picker each
+  exercise's latest weight (at the start and on every change); it isn't saved as a pick, it's read from the log each
+  time. A weight you pick here still wins.
+- **On a phone the row takes two lines** (the name with History; the weight and Start together beneath), and **an
+  exercise's own page has the picker too**, since its Start uses the same weight.
+- **A line says what the number means**, on the list and by the picker on an exercise's page ("Weight: each dumbbell").
+- **V7B3-T5's expected text changed** from "12 reps" to "12 reps · 1 kg": a dumbbell row nobody has touched is at its
+  1 kg minimum, and the set says so.
+
+**Kept as the plan says, for you to confirm:** an exercise never done and never picked still saves its minimum (1 kg
+dumbbells, 5 kg stack, 20 kg bar) as the set's weight, as D7 has it; the stepper shows that number before Start, but
+from the menu at the machine you only see it once the set is running. And reaching a working weight the first time is
+one tap per step (20 → 60 kg on the bar is 16 taps); press-and-hold would be a small addition if you want it.
+
+**A review** (3 angles, one skeptic per finding; 18 findings, the 10 most serious checked): 4 held; 6 were turned down,
+mostly as "what the plan says" (some acted on anyway: the last logged weight above, a redraw test, the exercise page's
+layout); and the 8 unchecked were read and acted on where they named a real gap:
+- **The phone row fitted at 360 px by a tenth of a pixel** (so on some fonts Start dropped alone onto a third line), and
+  the wrapping had also loosened rows without a picker. Now it's a deliberate layout (above), checked at 320, 360 and
+  412 px with heavier fonts forced; rows without a picker are laid out exactly as before.
+- **Weights weren't shared between two windows of Amygo**, and a stale window's next pick wrote over the other's. Each
+  window now takes the other's picks as they happen (`followWeights`, started by `startApp`), as Block 1 did for the log.
+- **"12, 10 @ 12 kg" read the same whether one set or both had the weight.** A set with no weight beside ones that have
+  one now says so: "12 (no weight), 10 @ 12 kg".
+- **Eleven numbers would likely have been read out when the page opens** (each was a status line). The numbers are plain
+  text now, and one line reads a change out by name: "Bicep curls 11 kg".
+- Test gaps closed: a pick must tell the stepper to redraw; the weight must survive stepping onto a machine (9 of the 11
+  exercises start that way in the gym); the exercise page's picker and caption are checked exactly; and Block 1's
+  "numbers a newer Amygo adds travel untouched" test uses a number no version knows, now that `kg` is a known one.
+
+**A second check, of the fixes** (2 reviewers, one skeptic per finding): 3 of 7 held. Two were one gap (a line in T8
+claimed to check an unpicked row after Clear history but couldn't fail; T8 now follows such a row through Remove, Clear
+history and a restore made in another window). The third: the locked stepper on a row being done could show a number
+the set wasn't using, if the log or another window changed meanwhile. It now shows the weight the set started with.
+
+**Red-checks:** 69 deliberate breaks, one at a time; every one made a test fail. (The first run caught 64 of 66. One
+miss was a real gap: saved weights for exercises that take none were kept and written back, and T3 now checks only
+valid picks are saved. The other break turned out to change nothing, so it was replaced by one that does.)
+
+**Checked in the browser** (dev server): at 360 px each strength row is two lines and nothing runs off the side; 11 taps
+took Bicep curls from 1 to 12 kg; Start showed "Doing bicep curls · 12 kg" on the card and in the header, with the row
+locked; the set read "2 reps · 12 kg", and 12 kg was still there after a reload; one rep at 14 kg became Best over two
+at 12; with a log holding weights and nothing picked, the rows started from the log; a second tab followed the first
+tab's pick without a reload, and its own pick was saved on top. The popup over the person in the gym couldn't be seen in
+the test pane (it draws no frames while hidden); it uses the same words as the header, and a test renders it directly.
+
+**Found on the way, not part of this block:** finishing an exercise from the Exercises list logs an uncaught
+`removeChild` error from the popup's own removal. It happens on the live site too (it predates v9) and the app carries
+on; proposed as its own piece of work.
+
+**Your phone check (optional):** on Exercises, tap + on Bicep curls up to your weight, Start, do a few reps, Finish:
+Today shows "N reps · your kg", the row still shows it after closing and reopening the app, and Back squat's History
+marks your heaviest set as Best.
 
 ### Block 3: Fix a set
 

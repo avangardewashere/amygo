@@ -5,6 +5,7 @@ import { getBuild, type Furniture } from '../build/buildStore'
 import { catalogEntry, type FurnitureType } from '../build/catalogData'
 import { EXERCISES, type ExerciseKind } from '../exercises/catalog'
 import { nearestMachine } from '../exercises/list'
+import { kgFor } from '../exercises/weights'
 import { machine } from '../equipment/machineState'
 import { crankAngle } from '../equipment/bikeGeometry'
 import { repPhase, repsSince } from './reps'
@@ -29,9 +30,12 @@ type Point = { x: number; z: number }
 // On machines you get on, an exercise starts with the person stepping on
 // (arrived: false): the machine stays at rest and the clock starts only when
 // they reach the spot. session tells one go on a machine from the next. Machines you get on (treadmill) also say where to
-// stand while using it, and where to step back to afterwards.
+// stand while using it, and where to step back to afterwards. kg is the weight
+// it was started with (strength exercises that take one); it stays with the set
+// even if the picker is changed meanwhile.
 export type Activity = {
   kind: ExerciseKind
+  kg?: number
   machineId: string
   session: number
   arrived: boolean
@@ -135,7 +139,9 @@ function startExercise(kind: ExerciseKind, { placed = false, returnTo }: { place
   const { nearFurnitureId, holding } = store.get()
   const piece = getBuild().items.find((item) => item.id === nearFurnitureId)
   if (!piece || holding) return
-  const base = { kind, machineId: piece.id, session: ++sessions, startedAt: performance.now() }
+  // The weight last picked for it (from the list or here: both read the same store)
+  const kg = kgFor(kind)
+  const base = { kind, ...(kg !== undefined && { kg }), machineId: piece.id, session: ++sessions, startedAt: performance.now() }
   const back = returnTo ?? { x: playerPose.x, z: playerPose.z }
 
   let activity: Activity

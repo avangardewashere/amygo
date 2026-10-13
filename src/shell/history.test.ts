@@ -347,7 +347,8 @@ describe('History by exercise', () => {
     app.gym.finishFromList()
     page = historyPart(show(app))
     expect(page).toContain('All sets · 1')
-    expect(page).toContain('<strong>12 reps</strong>')
+    // (with the weight the row started at: a dumbbell row never touched is at its minimum, 1 kg)
+    expect(page).toContain('<strong>12 reps · 1 kg</strong>')
 
     // Start is off when the machine isn't in the gym, as on the list
     app.build.getBuild().items = app.build.getBuild().items.filter((item) => item.type !== 'rower')

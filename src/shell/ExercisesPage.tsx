@@ -9,16 +9,21 @@ import { lastSets } from '../log/sets'
 import { useNow } from './clock'
 import { ExerciseHistoryPage } from './ExerciseHistoryPage'
 import { NowDoing } from './NowDoing'
+import { WeightAnnouncer, WeightStepper } from './WeightStepper'
 import { useHistoryKind } from './tabStore'
 import { openHistory } from './tabs'
+
+// What the weight beside Start means on each kind of kit (decision D6)
+export const WEIGHTS_NOTE = 'Weights are for each dumbbell, the stack on a machine, or the bar with its plates.'
 
 // The History button's id for an exercise (focus goes back to it on Back)
 const historyButtonId = (kind: ExerciseKind) => `history-${kind}`
 
 // The Exercises page: everything the gym can do, grouped by machine. Start
-// puts the person on the nearest machine of that kind, doing it; History
-// opens that exercise's own page over the list. Under each exercise done
-// before: "Last: 12 reps · Yesterday".
+// puts the person on the nearest machine of that kind, doing it, with the
+// weight picked beside it (strength exercises); History opens that exercise's
+// own page over the list. Under each exercise done before:
+// "Last: 12 reps · 10 kg · Yesterday".
 // Days are counted from the shared clock (see clock.ts). (`now` is for tests.)
 export function ExercisesPage({ now }: { now?: number }) {
   const items = useBuild((s) => s.items)
@@ -42,6 +47,7 @@ export function ExercisesPage({ now }: { now?: number }) {
       {/* While a history page covers it, the list is kept (with its scroll) but out of reach */}
       <section className="page" aria-labelledby="exercises-title" inert={historyKind !== null}>
         <h2 id="exercises-title">Exercises</h2>
+        <p className="page-note weights-note">{WEIGHTS_NOTE}</p>
         <NowDoing />
         {holding && <p className="page-note">Put the dumbbell down first (on Home) to start an exercise.</p>}
         {groups.map((group) => (
@@ -69,6 +75,7 @@ export function ExercisesPage({ now }: { now?: number }) {
                       >
                         History
                       </button>
+                      <WeightStepper kind={kind} locked={doing === kind} />
                       {doing === kind ? (
                         <span className="doing-tag">Doing</span>
                       ) : (
@@ -90,6 +97,8 @@ export function ExercisesPage({ now }: { now?: number }) {
         ))}
       </section>
       {historyKind && <ExerciseHistoryPage kind={historyKind} now={now} />}
+      {/* Reads a weight change out (outside the list, which is out of reach while a history page covers it) */}
+      <WeightAnnouncer />
     </>
   )
 }

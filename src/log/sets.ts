@@ -6,14 +6,16 @@ import { strokesSince } from '../equipment/rowerGeometry'
 
 // One finished set. endedAt is the real time of day (ms since 1970), because
 // the exercise clock (performance.now) starts again at every reload.
-// The numbers are what the gym measures (no weights: the gym has no picker):
-// reps for strength exercises, distance for cardio, plus strokes on the rower.
+// The numbers are what the gym measures: reps for strength exercises (with the
+// weight picked for them, in kg, on exercises that take one), distance for
+// cardio, plus strokes on the rower. Sets saved before weights have no kg.
 export type LoggedSet = {
   id: string
   kind: ExerciseKind
   endedAt: number
   seconds: number
   reps?: number
+  kg?: number
   meters?: number
   strokes?: number
 }
@@ -44,18 +46,21 @@ export function finishedPart(activity: Activity, now: number, endedAt: number): 
   }
   const reps = repsDone(activity, now)
   if (reps < MIN_REPS) return null
-  return { kind, endedAt, seconds: cents(seconds), reps }
+  const set: NewSet = { kind, endedAt, seconds: cents(seconds), reps }
+  if (activity.kg !== undefined && EXERCISES[kind].load) set.kg = activity.kg
+  return set
 }
 
 const isCount = (value: unknown) => Number.isInteger(value) && (value as number) >= 0
 const isAmount = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0
-const KNOWN_FIELDS = new Set(['id', 'kind', 'endedAt', 'seconds', 'reps', 'meters', 'strokes'])
+const KNOWN_FIELDS = new Set(['id', 'kind', 'endedAt', 'seconds', 'reps', 'meters', 'strokes', 'kg'])
 
 // A stored entry (from this browser's log or a backup file) as a set, or null
 // if it isn't a real one: a known exercise, a time, and the numbers that
-// exercise records (reps for strength; distance for cardio; strokes too on the
-// rower). Numbers that don't belong to its exercise are left behind; numbers a
-// newer Amygo adds (a weight, say) come along untouched.
+// exercise records (reps for strength, with a weight in kg if it has one and
+// the exercise takes one; distance for cardio; strokes too on the rower).
+// Numbers that don't belong to its exercise are left behind; numbers a newer
+// Amygo adds come along untouched.
 export function checkedSet(entry: unknown): LoggedSet | null {
   if (typeof entry !== 'object' || entry === null) return null
   const stored = entry as Record<string, unknown>
@@ -64,10 +69,15 @@ export function checkedSet(entry: unknown): LoggedSet | null {
   if (!isAmount(stored.endedAt) || !isAmount(stored.seconds)) return null
   const kind = stored.kind as ExerciseKind
   const set: LoggedSet = { id: stored.id, kind, endedAt: stored.endedAt as number, seconds: stored.seconds as number }
-  const { speed, strokes } = EXERCISES[kind]
+  const { speed, strokes, load } = EXERCISES[kind]
   if (!speed) {
     if (!isCount(stored.reps)) return null
     set.reps = stored.reps as number
+    // A weight is optional (sets from before weights have none), but if it's there it must be a real one
+    if (load && stored.kg !== undefined) {
+      if (!isAmount(stored.kg)) return null
+      set.kg = stored.kg as number
+    }
   } else {
     if (!isAmount(stored.meters) || (strokes && !isCount(stored.strokes))) return null
     set.meters = stored.meters as number
@@ -172,17 +182,22 @@ export function setsOf(sets: LoggedSet[], kind: ExerciseKind) {
   return sets.filter((set) => set.kind === kind).sort((a, b) => b.endedAt - a.endedAt)
 }
 
-// What makes one set better than another: more reps for strength exercises,
-// more distance for cardio. The rower too: its pace is fixed (2:00 per 500 m),
-// so on pace every row would tie.
+// What makes one set better than another. Strength: the heavier set; at the
+// same weight, more reps (a set with no weight, from before weights, counts as
+// 0 kg). Cardio: more distance. The rower too: its pace is fixed (2:00 per
+// 500 m), so on pace every row would tie.
 const score = (set: LoggedSet) => set.reps ?? set.meters ?? 0
+const beats = (set: LoggedSet, other: LoggedSet) => {
+  const heavier = (set.kg ?? 0) - (other.kg ?? 0)
+  return heavier !== 0 ? heavier > 0 : score(set) > score(other)
+}
 
 // The best of one exercise's sets; on a tie, the earlier set (the first time
 // you reached it). null when there are none.
 export function bestSet(sets: LoggedSet[]): LoggedSet | null {
   let best: LoggedSet | null = null
   for (const set of sets) {
-    const better = !best || score(set) > score(best) || (score(set) === score(best) && set.endedAt < best.endedAt)
+    const better = !best || beats(set, best) || (!beats(best, set) && set.endedAt < best.endedAt)
     if (better) best = set
   }
   return best
