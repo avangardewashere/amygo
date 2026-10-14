@@ -40,8 +40,9 @@ export default function App() {
     <main className="app">
       <Header />
       <div className="stage">
-        {/* The gym: out of reach (inert) while the welcome card is over it */}
-        <div className="gym-layer" inert={welcome}>
+        {/* The gym: out of reach (inert) while the welcome card or another tab is over it
+            (its popups over the person are still drawn behind the page) */}
+        <div className="gym-layer" inert={welcome || !home}>
           <Suspense fallback={<p className="gym-loading">{LOADING_TEXT}</p>}>
             <GymScene />
           </Suspense>

@@ -5,6 +5,7 @@
 // its own tiny file so models don't import the game state (that would make
 // the imports go round in a circle).
 import type { ExerciseKind } from '../exercises/catalog'
+import { REP_SECONDS } from '../interaction/reps'
 
 export const machine = {
   activeId: null as string | null,
@@ -12,6 +13,7 @@ export const machine = {
   speed: 0, // treadmill belt speed, m/s
   cadence: 0, // bike pedal turns per second
   startedAt: 0, // when the exercise (or its current pace) started (for rep and pedal timing)
+  repSeconds: REP_SECONDS, // how long one rep takes in this set (the tempo it started with)
   crankOffset: 0, // bike: how far the pedals had turned before the current pace (radians)
   backrest: 0, // adjustable bench: backrest angle up from flat, radians
 }

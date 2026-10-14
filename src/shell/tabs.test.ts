@@ -92,14 +92,14 @@ describe('app shell', () => {
     const later = walk.startedAt + 30_500
     openTab('home')
     expect(getGym().activity).toBe(walk)
-    expect(progressText(getGym().activity!, later)).toBe('0.05 km · 0:30')
+    expect(progressText(getGym().activity!, later)).toBe('0.05 km · 0:30 of 10:00') // (v10: counted against its target)
   })
 
   it('V6B1-T6 (found in the browser): a clock read before the start shows the start, never a negative count', () => {
     const curls = start('rack-1', 'dumbbellRack', 'curl', 'Bicep curls')
-    expect(progressText(curls, curls.startedAt - 25_000)).toBe('First rep…')
+    expect(progressText(curls, curls.startedAt - 25_000)).toBe('Set 1 of 3 · 0 of 12 reps') // (v10: against its target)
     const walk = start('treadmill-1', 'treadmill', 'walk', 'Walk')
-    expect(progressText(walk, walk.startedAt - 25_000)).toBe('0.00 km · 0:00')
+    expect(progressText(walk, walk.startedAt - 25_000)).toBe('0.00 km · 0:00 of 10:00')
   })
 
   it('V6B1-T5: leaving Home in build mode ends build mode, with no drag left half-done', () => {

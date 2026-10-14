@@ -9,6 +9,7 @@ import { emptyHistory, finishedAt, setDay, setLength, setNumbers } from '../log/
 import { bestSet, setsOf } from '../log/sets'
 import { NowDoing } from './NowDoing'
 import { SetAnnouncer, SetRows } from './SetRows'
+import { TargetChip, TargetEditor } from './TargetPicker'
 import { WeightStepper } from './WeightStepper'
 import { useNow } from './clock'
 import { closeHistory } from './tabs'
@@ -60,7 +61,8 @@ export function ExerciseHistoryPage({ kind, now }: { kind: ExerciseKind; now?: n
       {holding && <p className="page-note">Put the dumbbell down first (on Home) to start an exercise.</p>}
       {!doing && (
         <div className="history-start-row">
-          {/* The same weight picker as on the list, before Start as there: this Start uses it too */}
+          {/* The same target and weight pickers as on the list, before Start as there: this Start uses them too */}
+          <TargetChip kind={kind} place="history" />
           <WeightStepper kind={kind} />
           <button
             type="button"
@@ -75,6 +77,7 @@ export function ExerciseHistoryPage({ kind, now }: { kind: ExerciseKind; now?: n
           >
             Start
           </button>
+          <TargetEditor kind={kind} place="history" />
           {load && <small className="last-line weight-means">Weight: {LOAD_MEANS[load.of]}</small>}
         </div>
       )}

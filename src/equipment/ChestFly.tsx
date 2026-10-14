@@ -48,7 +48,7 @@ export function ChestFly({ id }: { id: string }) {
 
   useFrame((_, delta) => {
     const inUse = machine.activeId === id
-    const target = inUse ? repPhase(machine.startedAt) : 0
+    const target = inUse ? repPhase(machine.startedAt, performance.now(), machine.repSeconds) : 0
     // In use: follow the rep exactly (so the handles stay in the hands).
     // Afterwards: let the arms swing back open gently.
     squeeze.current = inUse ? target : MathUtils.damp(squeeze.current, target, 5, delta)

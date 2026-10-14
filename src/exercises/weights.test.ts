@@ -487,26 +487,30 @@ describe('Weights in kg', { timeout: 30_000 }, () => {
     app.gym.stopExercise()
     expect(row(await exercisesPage(), 'Bicep curls')).toContain(shows('14 kg')) // free again: the pick
 
-    // The buttons do what they say (they can't be clicked without a browser, so read what they call)
-    const sources = import.meta.glob('/src/shell/WeightStepper.tsx', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
+    // The buttons do what they say (they can't be clicked without a browser, so read what they call).
+    // (v10: the − kg + is drawn by the shared Stepper, which a target's steppers use too)
+    const sources = import.meta.glob(['/src/shell/WeightStepper.tsx', '/src/shell/said.ts'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>
     const stepper = sources['/src/shell/WeightStepper.tsx']
-    expect(stepper).toMatch(/aria-label=\{`Lighter: \$\{name\}`\}[\s\S]*?onClick=\{\(\) => nudge\(-1\)\}/)
-    expect(stepper).toMatch(/aria-label=\{`Heavier: \$\{name\}`\}[\s\S]*?onClick=\{\(\) => nudge\(1\)\}/)
+    expect(stepper).toMatch(/aria-label=\{less\.label\}[^\n]*onClick=\{\(\) => onNudge\(-1\)\}>\s*−/)
+    expect(stepper).toMatch(/aria-label=\{more\.label\}[^\n]*onClick=\{\(\) => onNudge\(1\)\}>\s*\+/)
+    expect(stepper).toMatch(/less=\{\{ label: `Lighter: \$\{name\}`/)
+    expect(stepper).toMatch(/more=\{\{ label: `Heavier: \$\{name\}`/)
     // …a tap changes the weight, then says what it now is…
-    expect(stepper).toMatch(/const nudge = [^\n]*\{\s*nudgeKg\(kind, direction\)\s*said\.set\(\{ text: `\$\{name\} \$\{kgText\(kgFor\(kind\)!\)\}` \}\)/)
+    expect(stepper).toMatch(/onNudge=\{\(direction\) => \{\s*nudgeKg\(kind, direction\)\s*say\(`\$\{name\} \$\{kgText\(kgFor\(kind\)!\)\}`\)/)
+    expect(sources['/src/shell/said.ts']).toMatch(/export const say = \(text: string\) => said\.set\(\{ text \}\)/)
     // …and the number redraws because it's read through the store (see T1: every change is announced)
     expect(stepper).toMatch(/const picked = useKg\(kind\)/)
     const weightsSource = (import.meta.glob('/src/exercises/weights.ts', { query: '?raw', import: 'default', eager: true }) as Record<string, string>)['/src/exercises/weights.ts']
     expect(weightsSource).toMatch(/export const useKg = [\s\S]*?store\.useSelect\(/)
 
     // On a phone the row is laid out on purpose: History beside the name, the weight and Start together beneath.
-    // Rows without a picker are laid out as they always were (they must not wrap).
+    // (v10: every row has a target now, so every row is laid out this way; nothing wraps)
     const css = ((await node('node:fs')).readFileSync('src/index.css', 'utf8') as string).replace(/\r\n/g, '\n')
-    const phone = css.slice(css.indexOf('@media (max-width: 599px) {\n  .machine-group li:has(.weight-stepper)'))
-    expect(phone).toMatch(/^@media \(max-width: 599px\) \{\n  \.machine-group li:has\(\.weight-stepper\) \{\n    display: grid;\n    grid-template-columns: minmax\(0, 1fr\) auto auto;/)
-    expect(phone).toMatch(/li:has\(\.weight-stepper\) \.exercise-name \{\n    grid-column: 1 \/ 3;/)
-    expect(phone).toMatch(/li:has\(\.weight-stepper\) \.row-actions \{\n    display: contents;/)
-    expect(phone).toMatch(/li:has\(\.weight-stepper\) \.weight-stepper \{\n    grid-column: 2;/)
+    const phone = css.slice(css.indexOf('@media (max-width: 599px) {\n  .machine-group li {'))
+    expect(phone).toMatch(/^@media \(max-width: 599px\) \{\n  \.machine-group li \{\n    grid-template-columns: minmax\(0, 1fr\) auto auto;/)
+    expect(phone).toMatch(/\.machine-group li \.exercise-name \{\n    grid-column: 1 \/ 3;/)
+    expect(phone).toMatch(/\.machine-group li \.row-actions \{\n    display: contents;/)
+    expect(phone).toMatch(/\.machine-group li \.weight-stepper \{\n    grid-column: 2;/)
     const block = (selector: string) => css.slice(css.indexOf(`\n${selector} {\n`), css.indexOf('}', css.indexOf(`\n${selector} {\n`)))
     expect(block('.machine-group li')).not.toContain('flex-wrap')
     expect(block('.row-actions')).toContain('flex: none')

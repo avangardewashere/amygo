@@ -1,7 +1,7 @@
 // What a saved set is, and the rules for saving one. Plain data and maths:
 // no React, no 3D, so it can be tested on its own and loads with the shell.
 import { EXERCISES, type ExerciseKind } from '../exercises/catalog'
-import { paceSeconds, repsDone, type Activity } from '../interaction/gymStore'
+import { endsAt, MIN_CARDIO_SECONDS, MIN_REPS, paceSeconds, repsDone, type Activity } from '../interaction/gymStore'
 import { strokesSince } from '../equipment/rowerGeometry'
 
 // One finished set. endedAt is the real time of day (ms since 1970), because
@@ -21,9 +21,8 @@ export type LoggedSet = {
 }
 export type NewSet = Omit<LoggedSet, 'id'>
 
-// Shorter than this is a false start, not a set (decision D3)
-export const MIN_REPS = 1
-export const MIN_CARDIO_SECONDS = 10
+// Shorter than this is a false start, not a set (decision D3; kept with the gym's clock)
+export { MIN_CARDIO_SECONDS, MIN_REPS }
 
 const cents = (value: number) => Math.round(value * 100) / 100
 
@@ -41,16 +40,21 @@ export function cardioNumbers(kind: ExerciseKind, seconds: number) {
 // the person never reached the machine, or it's too short. After a change of
 // pace only the new pace's part is counted; the part before it was saved at
 // the switch (decision D4: walk then run is two sets).
-export function finishedPart(activity: Activity, now: number, endedAt: number): NewSet | null {
+// A set with a target never goes past it (v10): if it ends late (its timer held
+// up by a sleeping phone), it's saved as it would have ended, on time, at the
+// time of day it would have ended.
+export function finishedPart(activity: Activity, now: number, endedAtNow: number): NewSet | null {
   if (!activity.arrived) return null // still stepping on: it never started
-  const { kind } = activity
+  const { kind, target } = activity
   const { speed } = EXERCISES[kind]
-  const seconds = Math.max(0, paceSeconds(activity, now))
+  const until = Math.min(now, endsAt(activity) ?? now)
+  const endedAt = until < now ? Math.round(endedAtNow - (now - until)) : endedAtNow
+  const seconds = Math.max(0, paceSeconds(activity, until))
   if (speed) {
     if (seconds < MIN_CARDIO_SECONDS) return null
     return { kind, endedAt, ...cardioNumbers(kind, seconds) }
   }
-  const reps = repsDone(activity, now)
+  const reps = Math.min(repsDone(activity, now), target?.reps ?? Infinity)
   if (reps < MIN_REPS) return null
   const set: NewSet = { kind, endedAt, seconds: cents(seconds), reps }
   if (activity.kg !== undefined && EXERCISES[kind].load) set.kg = activity.kg

@@ -1,6 +1,6 @@
 // The words in the exercise popup, e.g. "Cycling · 20.0 km/h" over
 // "0.15 km · 0:27". Kept apart from the popup component so they can be tested.
-import { EXERCISES, metersSoFar, repsDone, secondsSince, type Activity } from './gymStore'
+import { EXERCISES, endsAt, metersSoFar, repsDone, secondsSince, type Activity, type Between } from './gymStore'
 import { strokesSince } from '../equipment/rowerGeometry'
 import { kgText } from '../exercises/load'
 
@@ -25,22 +25,38 @@ export function headline(activity: Pick<Activity, 'kind' | 'kg'>) {
   return activity.kg === undefined ? doing : `${doing} · ${kgText(activity.kg)}`
 }
 
-// Bottom line: distance and time when there's a speed, otherwise the rep count
-export function progressText(activity: Pick<Activity, 'kind' | 'startedAt' | 'pace'>, nowRead: number) {
+type Counted = Pick<Activity, 'kind' | 'startedAt' | 'pace'> & Partial<Pick<Activity, 'arrived' | 'target' | 'set' | 'repSeconds'>>
+
+// Bottom line: distance and time when there's a speed, otherwise the rep count;
+// with a target, counted against it ("7 of 12 reps", "0:27 of 10:00"), and with
+// more than one set, which set this is ("Set 2 of 3 · 7 of 12 reps")
+export function progressText(activity: Counted, nowRead: number) {
   // A clock read before the exercise began (a display that last updated earlier,
-  // or a clock restarted on stepping onto a machine) counts as the very start
+  // or a clock restarted on stepping onto a machine) counts as the very start.
+  // A set never shows more than its target, even if its end is a moment late.
   const now = Math.max(nowRead, activity.startedAt)
+  const capped = Math.min(now, endsAt(activity) ?? now)
+  const { target, set = 1 } = activity
+  const ofSets = target && target.sets > 1 ? `Set ${set} of ${target.sets} · ` : ''
   const { speed, strokes } = EXERCISES[activity.kind]
   if (speed) {
     // Distance = speed × time, added up across pace changes; the clock times the whole session
-    const seconds = secondsSince(activity, now)
-    const km = metersSoFar(activity, now) / 1000
+    const seconds = secondsSince(activity, capped)
+    const km = metersSoFar(activity, capped) / 1000
+    const time = target?.minutes !== undefined ? `${clock(seconds)} of ${clock(target.minutes * 60)}` : clock(seconds)
     if (strokes) {
       const count = strokesSince(seconds)
-      return `${count} ${count === 1 ? 'stroke' : 'strokes'} · ${km.toFixed(2)} km`
+      const strokesDone = `${count} ${count === 1 ? 'stroke' : 'strokes'}`
+      // With a target, the time to go matters more than the distance (the log keeps that)
+      return `${ofSets}${strokesDone} · ${target?.minutes !== undefined ? time : `${km.toFixed(2)} km`}`
     }
-    return `${km.toFixed(2)} km · ${clock(seconds)}`
+    return `${ofSets}${km.toFixed(2)} km · ${time}`
   }
   const reps = repsDone(activity, now)
+  if (target?.reps !== undefined) return `${ofSets}${Math.min(reps, target.reps)} of ${target.reps} reps`
   return reps === 0 ? 'First rep…' : `${reps} ${reps === 1 ? 'rep' : 'reps'} done`
 }
+
+// Between two sets of a round: "Set 1 of 3 done"
+export const betweenText = (between: Pick<Between, 'set' | 'target'>) =>
+  `Set ${between.set} of ${between.target.sets} done`

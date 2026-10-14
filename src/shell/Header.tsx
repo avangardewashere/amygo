@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useGym } from '../interaction/gymStore'
-import { headline, progressText } from '../interaction/activityText'
+import { EXERCISES, useGym } from '../interaction/gymStore'
+import { betweenText, headline, progressText } from '../interaction/activityText'
 import { useBuild } from '../build/buildStore'
 import { ROOM } from '../scene/dimensions'
 import { APP_NAME } from './brand'
@@ -8,15 +8,24 @@ import { installApp, useInstallChoice } from './install'
 import { useTab } from './tabStore'
 import { WELCOME_BUTTON_ID, openWelcome } from './tabs'
 
-// While exercising: "Doing bicep curls · 12 reps done", kept up to date
+// While exercising: "Doing bicep curls · 10 kg · 7 of 12 reps", kept up to date;
+// between two sets: "Bicep curls · Set 1 of 3 done"
 function Doing() {
   const activity = useGym((s) => s.activity)
+  const between = useGym((s) => s.between)
   const [now, setNow] = useState(() => performance.now())
   useEffect(() => {
     if (!activity) return
     const timer = setInterval(() => setNow(performance.now()), 500)
     return () => clearInterval(timer)
   }, [activity])
+  if (!activity && between) {
+    return (
+      <p className="shell-doing">
+        {EXERCISES[between.kind].name} · {betweenText(between)}
+      </p>
+    )
+  }
   if (!activity) return null
   return (
     <p className="shell-doing">

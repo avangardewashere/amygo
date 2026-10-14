@@ -1,4 +1,4 @@
-import { closeMenu, stopExercise } from '../interaction/gymStore'
+import { closeMenu, finishExercise } from '../interaction/gymStore'
 import { getBuild, rotateSelected, select, toggleBuildMode } from './buildStore'
 import { onHome } from '../shell/tabStore'
 
@@ -6,7 +6,7 @@ import { onHome } from '../shell/tabStore'
 // and ends any exercise in progress
 export function switchMode() {
   closeMenu()
-  stopExercise()
+  finishExercise()
   toggleBuildMode()
 }
 

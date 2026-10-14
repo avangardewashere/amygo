@@ -6,9 +6,11 @@ import { catalogEntry, type FurnitureType } from '../build/catalogData'
 import { EXERCISES, type ExerciseKind } from '../exercises/catalog'
 import { nearestMachine } from '../exercises/list'
 import { kgFor } from '../exercises/weights'
+import { targetFor, type Target } from '../exercises/targets'
+import { repSecondsNow } from '../settings/settings'
 import { machine } from '../equipment/machineState'
 import { crankAngle } from '../equipment/bikeGeometry'
-import { repPhase, repsSince } from './reps'
+import { REP_SECONDS, repPhase, repsSince } from './reps'
 import { onHome } from '../shell/tabStore'
 
 // Game state that both the 3D scene and the on-screen menus need to see.
@@ -32,10 +34,15 @@ type Point = { x: number; z: number }
 // they reach the spot. session tells one go on a machine from the next. Machines you get on (treadmill) also say where to
 // stand while using it, and where to step back to afterwards. kg is the weight
 // it was started with (strength exercises that take one); it stays with the set
-// even if the picker is changed meanwhile.
+// even if the picker is changed meanwhile. So do its target (v10: "3 × 12"),
+// which set of it this is (from 1), and its tempo (seconds per rep): a set
+// ends by itself at its last rep or minute (see workout/ending.ts).
 export type Activity = {
   kind: ExerciseKind
   kg?: number
+  target?: Target
+  set?: number
+  repSeconds?: number
   machineId: string
   session: number
   arrived: boolean
@@ -43,8 +50,13 @@ export type Activity = {
   faceYaw: number
   stand?: Point & { y: number }
   returnTo?: Point
-  pace?: { since: number; meters: number; crank: number }
+  pace?: { since: number; meters: number; crank: number; counted?: boolean }
 }
+
+// Between two sets of a target (v10): "Set 1 of 3 done", with Next set and
+// Finish. The next set keeps the same target, and starts from where the person
+// stood before the first one. since: when the set ended (exercise clock).
+export type Between = { kind: ExerciseKind; set: number; target: Target; returnTo?: Point; since: number }
 
 type GymState = {
   holding: boolean // is the person carrying the floor dumbbell?
@@ -53,6 +65,7 @@ type GymState = {
   menu: MenuId | null // which item's menu is open
   dumbbell: FloorSpot // where the floor dumbbell lies when not carried
   activity: Activity | null
+  between: Between | null
 }
 
 const store = createStore<GymState>({
@@ -62,6 +75,7 @@ const store = createStore<GymState>({
   menu: null,
   dumbbell: { x: 1.5, z: 0.8, rotationY: 0.5 },
   activity: null,
+  between: null,
 })
 
 // Read one piece of state in a component: const holding = useGym((s) => s.holding)
@@ -84,8 +98,9 @@ const WALL_GAP = 0.2
 // Exercises done with dumbbells in your hands
 export const isArmExercise = (kind: ExerciseKind) => EXERCISES[kind].weights !== undefined
 
-// Where in the current rep we are: 0 → 1 → 0 (see reps.ts)
-export const repProgress = (activity: Activity, now = performance.now()) => repPhase(activity.startedAt, now)
+// Where in the current rep we are: 0 → 1 → 0 (see reps.ts), at the set's own tempo
+export const repProgress = (activity: Activity, now = performance.now()) =>
+  repPhase(activity.startedAt, now, activity.repSeconds)
 
 export const secondsSince = (activity: Pick<Activity, 'startedAt'>, now = performance.now()) => (now - activity.startedAt) / 1000
 
@@ -101,7 +116,23 @@ export const metersSoFar = (activity: Pick<Activity, 'kind' | 'startedAt' | 'pac
 export const crankSoFar = (activity: Pick<Activity, 'kind' | 'startedAt' | 'pace'>, now = performance.now()) =>
   (activity.pace?.crank ?? 0) + crankAngle(EXERCISES[activity.kind].cadence ?? 0, paceSeconds(activity, now))
 
-export const repsDone = (activity: Pick<Activity, 'startedAt'>, now = performance.now()) => repsSince(activity.startedAt, now)
+export const repsDone = (activity: Pick<Activity, 'startedAt' | 'repSeconds'>, now = performance.now()) =>
+  repsSince(activity.startedAt, now, activity.repSeconds)
+
+// When a set with a target is over, on the exercise clock: its reps at its
+// tempo, or its minutes, from the moment it began (the session's start, so a
+// change of pace on the treadmill keeps the same end). null without a target,
+// or while still stepping on (the clock starts on arrival).
+export function endsAt(activity: Pick<Activity, 'startedAt' | 'target' | 'repSeconds'> & { arrived?: boolean }) {
+  const { target } = activity
+  if (!target || !activity.arrived) return null
+  const seconds = target.minutes !== undefined ? target.minutes * 60 : target.reps * (activity.repSeconds ?? REP_SECONDS)
+  return activity.startedAt + seconds * 1000
+}
+
+// Shorter than this is a false start, not a set (decision D3)
+export const MIN_REPS = 1
+export const MIN_CARDIO_SECONDS = 10
 
 // A point given relative to a piece of furniture (its own left/right and
 // front/back) → where that is in the room, after the piece's rotation
@@ -125,23 +156,40 @@ function runMachine(activity: Activity) {
   machine.backrest = EXERCISES[kind].backrest ?? 0
   machine.crankOffset = 0
   machine.startedAt = startedAt
+  machine.repSeconds = activity.repSeconds ?? REP_SECONDS
 }
 
 // How far in front of a machine you use from beside it (the dumbbell rack)
 // the person is put when started from the Exercises list
 const IN_FRONT = 0.45
 
+// A set's place in a round of sets: which set it is, and the round's target
+type Round = { set: number; target: Target }
+
 // Start an exercise on the machine in reach. From the Exercises list
 // (placed), the gym isn't on screen, so the person is put straight onto the
 // machine and the exercise begins at once, instead of stepping on.
 //   returnTo: where to step back to afterwards (default: where they are)
-function startExercise(kind: ExerciseKind, { placed = false, returnTo }: { placed?: boolean; returnTo?: Point } = {}) {
+//   round: the next set of a round (default: set 1 of the target picked for it)
+function startExercise(
+  kind: ExerciseKind,
+  { placed = false, returnTo, round }: { placed?: boolean; returnTo?: Point; round?: Round } = {},
+) {
   const { nearFurnitureId, holding } = store.get()
   const piece = getBuild().items.find((item) => item.id === nearFurnitureId)
   if (!piece || holding) return
   // The weight last picked for it (from the list or here: both read the same store)
   const kg = kgFor(kind)
-  const base = { kind, ...(kg !== undefined && { kg }), machineId: piece.id, session: ++sessions, startedAt: performance.now() }
+  const base = {
+    kind,
+    ...(kg !== undefined && { kg }),
+    target: round?.target ?? targetFor(kind),
+    set: round?.set ?? 1,
+    repSeconds: repSecondsNow(), // the tempo now; the set keeps it
+    machineId: piece.id,
+    session: ++sessions,
+    startedAt: performance.now(),
+  }
   const back = returnTo ?? { x: playerPose.x, z: playerPose.z }
 
   let activity: Activity
@@ -167,27 +215,59 @@ function startExercise(kind: ExerciseKind, { placed = false, returnTo }: { place
     activity = { ...base, arrived: true, faceYaw: Math.atan2(playerPose.x - piece.x, playerPose.z - piece.z) }
     runMachine(activity) // nothing to step onto: start straight away
   }
-  store.set({ activity, menu: null })
+  store.set({ activity, menu: null, between: null })
 }
 
 // Start an exercise from the Exercises list: on the nearest machine of its
 // kind, with the person put straight onto it. Switching from another
 // exercise keeps where they first came from. Returns false if it can't start
 // (no such machine in the gym, or hands full).
-export function startFromList(kind: ExerciseKind) {
+export function startFromList(kind: ExerciseKind, round?: Round & { returnTo?: Point }) {
   const { holding, activity } = store.get()
   if (holding) return false
   const piece = nearestMachine(EXERCISES[kind].machine, getBuild().items, playerPose)
   if (!piece) return false
-  const back = activity?.returnTo
+  const back = round?.returnTo ?? activity?.returnTo
   stopExercise()
   store.set({ nearFurnitureId: piece.id })
-  startExercise(kind, { placed: true, returnTo: back })
+  startExercise(kind, { placed: true, returnTo: back, round })
   return true
 }
 
-// Finishing from the list is exactly the in-gym Stop
-export const finishFromList = () => stopExercise()
+// Between sets: the next set of the round, on the nearest machine as from the list
+export function nextSet() {
+  const { between } = store.get()
+  if (!between) return false
+  return startFromList(between.kind, { ...between, set: between.set + 1 })
+}
+
+// Done and Next set take each other's place on the card and the popup (a set
+// ends, the pause begins; Next set, a set begins). A tap that lands within this
+// long of the swap was meant for the button that was there, so it's ignored:
+// a double tap on Next set doesn't end set 2 at once, and a Done just as the set
+// ends by itself doesn't start the next one. (Remove and Undo do the same.)
+export const SWAP_PAUSE_MS = 600
+
+// The buttons' Done and Next set
+export function tapDone(now = performance.now()) {
+  const { activity } = store.get()
+  if (!activity || now - activity.startedAt < SWAP_PAUSE_MS) return false
+  stopExercise()
+  return true
+}
+export function tapNextSet(now = performance.now()) {
+  const { between } = store.get()
+  if (!between || now - between.since < SWAP_PAUSE_MS) return false
+  return nextSet()
+}
+
+// Finish: the set ends and is saved, and so does the round (no next set).
+// The in-gym Stop, Esc and the lists' Finish all mean this.
+export function finishExercise() {
+  stopExercise()
+  if (store.get().between) store.set({ between: null })
+}
+export const finishFromList = finishExercise
 
 // How close (meters) the person must be to a machine's spot to count as on it
 export const ARRIVE_DISTANCE = 0.02
@@ -206,12 +286,15 @@ export function stepOnto(position: { x: number; y: number; z: number }, now = pe
 }
 
 // The same session at a new pace, from `now`: same machine, same spot, same
-// start time; the distance and pedal angle so far are kept
+// start time; the distance and pedal angle so far are kept. counted: a part
+// before this pace was long enough to be saved as a set of its own (the log
+// saves each pace's part), so the session is one of its round's sets already.
 export function withNewPace(activity: Activity, kind: ExerciseKind, now: number): Activity {
+  const counted = activity.pace?.counted === true || paceSeconds(activity, now) >= MIN_CARDIO_SECONDS
   return {
     ...activity,
     kind,
-    pace: { since: now, meters: metersSoFar(activity, now), crank: crankSoFar(activity, now) },
+    pace: { since: now, meters: metersSoFar(activity, now), crank: crankSoFar(activity, now), counted },
   }
 }
 
@@ -240,14 +323,32 @@ function switchPace(kind: ExerciseKind) {
   store.set({ activity: next, menu: null })
 }
 
+// The set ends here and is saved (see log/logStore.ts): Done, the set's own end,
+// walking away. If it was one of a round with more to come, and it counts as a
+// set, the round waits for Next set or Finish.
 export function stopExercise() {
-  if (!store.get().activity) return
+  const { activity } = store.get()
+  if (!activity) return
   machine.activeId = null
   machine.exercise = null
   machine.speed = 0
   machine.cadence = 0
   machine.backrest = 0
-  store.set({ activity: null, menu: null })
+  store.set({ activity: null, menu: null, between: roundGoesOn(activity) })
+}
+
+// What a round looks like after `activity` ends now: waiting for its next set,
+// or over (null). A set that didn't count (never begun, or under a rep or 10 s
+// of cardio, so nothing of it saved) isn't one of its sets. Counted up to its
+// end, as it's saved (see log/sets.ts), even if it ends late.
+function roundGoesOn(activity: Activity, now = performance.now()): Between | null {
+  const { kind, target, set = 1, returnTo } = activity
+  if (!target || set >= target.sets || !activity.arrived) return null
+  const at = Math.min(now, endsAt(activity) ?? now)
+  const counted = EXERCISES[kind].speed
+    ? activity.pace?.counted === true || paceSeconds(activity, at) >= MIN_CARDIO_SECONDS
+    : repsDone(activity, now) >= MIN_REPS
+  return counted ? { kind, set, target, ...(returnTo && { returnTo }), since: now } : null
 }
 
 // Where the person goes when `previous` gives way to `current`: if the session
@@ -300,16 +401,17 @@ function menuInFocus(): MenuId | null {
 
 export function toggleMenu() {
   if (store.get().menu) return closeMenu()
-  if (store.get().activity) return stopExercise() // mid-exercise, E means "stop"
+  if (store.get().activity) return finishExercise() // mid-exercise, E means "stop"
   const focus = menuInFocus()
   if (focus) openMenu(focus)
 }
 
 // ---------- Floor dumbbell ----------
 
+// (Between two sets, picking it up is doing something else: the round is over)
 function pickUp() {
   const state = store.get()
-  if (state.near && !state.holding && !state.activity) store.set({ holding: true, near: false, menu: null })
+  if (state.near && !state.holding && !state.activity) store.set({ holding: true, near: false, menu: null, between: null })
 }
 
 function drop() {
@@ -351,7 +453,7 @@ export function menuActions(
     return s.holding ? [{ label: 'Drop', run: drop }] : [{ label: 'Pick up', run: pickUp }]
   }
   // Mid-exercise: stop, or switch to another pace without getting off
-  if (s.activity) return [{ label: 'Stop', run: stopExercise }, ...paceActions(s.activity)]
+  if (s.activity) return [{ label: 'Stop', run: finishExercise }, ...paceActions(s.activity)]
   if (s.holding) return [] // hands are full; the menu shows a note instead
   return (Object.keys(EXERCISES) as ExerciseKind[])
     .filter((kind) => EXERCISES[kind].machine === furnitureType)
@@ -364,7 +466,8 @@ function nearFurnitureType() {
   return getBuild().items.find((item) => item.id === id)?.type
 }
 
-// Keyboard: E opens/closes a menu, 1–9 picks an action, Esc closes or stops.
+// Keyboard: E opens/closes a menu, 1–9 picks an action, Esc closes or stops
+// (Stop: the set and its round, as Finish).
 export function listenToInteractionKeys() {
   const onDown = (e: KeyboardEvent) => {
     if (e.repeat || getBuild().mode === 'build') return // items can't be used while building
@@ -374,7 +477,7 @@ export function listenToInteractionKeys() {
       toggleMenu()
     } else if (e.code === 'Escape') {
       if (state.menu) closeMenu()
-      else stopExercise()
+      else finishExercise()
     } else if (/^Digit[1-9]$/.test(e.code)) {
       const pick = Number(e.code.slice(5)) - 1
       // With a menu open, numbers pick from it; mid-exercise, they pick a new pace

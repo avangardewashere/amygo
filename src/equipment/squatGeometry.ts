@@ -48,5 +48,5 @@ export function squatPosition(t: number) {
 // set, otherwise on the hooks
 export function barTarget(id: string, now = performance.now()) {
   if (machine.activeId !== id) return SQUAT.hooks
-  return squatPosition(repPhase(machine.startedAt, now)).bar
+  return squatPosition(repPhase(machine.startedAt, now, machine.repSeconds)).bar
 }

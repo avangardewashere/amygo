@@ -8,7 +8,7 @@ import { FitnessCharacter, MODEL_URL } from './FitnessCharacter'
 import { HUMAN_URL, HumanPerson } from './HumanPerson'
 import { listenToKeyboard, readMove } from './input'
 import { HandDumbbell, HeldDumbbellMenu } from '../equipment/PickableDumbbell'
-import { ActivityBubble } from '../interaction/ActivityBubble'
+import { ActivityBubble, BetweenBubble } from '../interaction/ActivityBubble'
 import {
   EXERCISES,
   PICKUP_RANGE,
@@ -85,6 +85,7 @@ export function Player() {
 
   const holding = useGym((s) => s.holding)
   const activity = useGym((s) => s.activity)
+  const between = useGym((s) => s.between)
 
   useEffect(() => listenToKeyboard(), [])
   useEffect(() => listenToInteractionKeys(), [])
@@ -181,6 +182,14 @@ export function Player() {
         <Html position={[0, 2.05, 0]} zIndexRange={[20, 0]}>
           <div className="item-anchor">
             <ActivityBubble activity={activity} />
+          </div>
+        </Html>
+      )}
+      {/* Between two sets of a round: Next set or Finish */}
+      {!activity && between && (
+        <Html position={[0, 2.05, 0]} zIndexRange={[20, 0]}>
+          <div className="item-anchor">
+            <BetweenBubble between={between} />
           </div>
         </Html>
       )}

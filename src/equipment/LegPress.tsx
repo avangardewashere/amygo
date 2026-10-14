@@ -52,7 +52,7 @@ export function LegPress({ id }: { id: string }) {
   // Slide the sled along its rails to wherever the feet are in the rep
   useFrame((_, delta) => {
     const inUse = machine.activeId === id
-    const target = inUse ? pressDistance(repPhase(machine.startedAt)) : PRESS.extended
+    const target = inUse ? pressDistance(repPhase(machine.startedAt, performance.now(), machine.repSeconds)) : PRESS.extended
     // Settle back gently onto its stops when you get off
     travel.current = inUse ? target : MathUtils.damp(travel.current, target, 6, delta)
     const [y, z] = alongSled(travel.current + FOOT_TO_PLATE)

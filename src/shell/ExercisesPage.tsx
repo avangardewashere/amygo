@@ -9,7 +9,9 @@ import { lastSets } from '../log/sets'
 import { useNow } from './clock'
 import { ExerciseHistoryPage } from './ExerciseHistoryPage'
 import { NowDoing } from './NowDoing'
+import { TargetChip, TargetEditor } from './TargetPicker'
 import { WeightAnnouncer, WeightStepper } from './WeightStepper'
+import { WorkoutSettings } from './WorkoutSettings'
 import { useHistoryKind } from './tabStore'
 import { openHistory } from './tabs'
 
@@ -21,9 +23,10 @@ const historyButtonId = (kind: ExerciseKind) => `history-${kind}`
 
 // The Exercises page: everything the gym can do, grouped by machine. Start
 // puts the person on the nearest machine of that kind, doing it, with the
-// weight picked beside it (strength exercises); History opens that exercise's
-// own page over the list. Under each exercise done before:
-// "Last: 12 reps · 10 kg · Yesterday".
+// target and weight picked beside it ("3 × 12 · − 10 kg + · Start"); the
+// target opens its steppers under the row. History opens that exercise's own
+// page over the list. Under each exercise done before:
+// "Last: 12 reps · 10 kg · Yesterday". Workout settings (the tempo) at the bottom.
 // Days are counted from the shared clock (see clock.ts). (`now` is for tests.)
 export function ExercisesPage({ now }: { now?: number }) {
   const items = useBuild((s) => s.items)
@@ -46,7 +49,10 @@ export function ExercisesPage({ now }: { now?: number }) {
     <>
       {/* While a history page covers it, the list is kept (with its scroll) but out of reach */}
       <section className="page" aria-labelledby="exercises-title" inert={historyKind !== null}>
-        <h2 id="exercises-title">Exercises</h2>
+        {/* (focusable from code: the cursor comes here when the card it was on goes) */}
+        <h2 id="exercises-title" tabIndex={-1}>
+          Exercises
+        </h2>
         <p className="page-note weights-note">{WEIGHTS_NOTE}</p>
         <NowDoing />
         {holding && <p className="page-note">Put the dumbbell down first (on Home) to start an exercise.</p>}
@@ -75,13 +81,14 @@ export function ExercisesPage({ now }: { now?: number }) {
                       >
                         History
                       </button>
+                      <TargetChip kind={kind} place="list" />
                       <WeightStepper kind={kind} locked={doing === kind} />
                       {doing === kind ? (
                         <span className="doing-tag">Doing</span>
                       ) : (
                         <button
                           type="button"
-                          className="list-button"
+                          className="list-button row-start"
                           disabled={!group.available || holding}
                           onClick={() => startFromList(kind)}
                         >
@@ -89,12 +96,14 @@ export function ExercisesPage({ now }: { now?: number }) {
                         </button>
                       )}
                     </div>
+                    <TargetEditor kind={kind} place="list" />
                   </li>
                 )
               })}
             </ul>
           </div>
         ))}
+        <WorkoutSettings />
       </section>
       {historyKind && <ExerciseHistoryPage kind={historyKind} now={now} />}
       {/* Reads a weight change out (outside the list, which is out of reach while a history page covers it) */}

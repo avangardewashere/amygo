@@ -94,7 +94,7 @@ export function CableMachine({ id }: { id: string }) {
 
   useFrame((_, delta) => {
     const kind = activeCable(id)
-    const t = kind ? repPhase(machine.startedAt) : 0
+    const t = kind ? repPhase(machine.startedAt, performance.now(), machine.repSeconds) : 0
     // Gliding into the hands at the start (or back to rest after); otherwise exact
     const gliding = !kind || performance.now() - machine.startedAt < GLIDE_SECONDS * 1000
     const follow = (from: number, to: number) => (gliding ? MathUtils.damp(from, to, GLIDE_EASE, delta) : to)

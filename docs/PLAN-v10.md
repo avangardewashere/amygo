@@ -144,6 +144,71 @@ after a set in Block 1, the card just says "Set 1 of 3 done" with **Next set** a
 **Summary:** A set now has a target, the partner does exactly that many reps at your tempo, and the set ends and saves
 itself, even while you're on another tab.
 
+**Status: done** (built 2026-10-14 on branch `v10-train-with-partner`; committed 2026-10-15). 172 tests passing (7 new:
+V10B1-T1..T7; four older ones updated, see below). **Built:** `src/exercises/targets.ts` (the targets, saved under
+`gym3d.targets`), `src/settings/settings.ts` (the tempo, saved under `gym3d.settings`), `src/workout/ending.ts` (the
+timer that ends a set), `TargetPicker.tsx` with `targetOpen.ts` and `said.ts`, and `WorkoutSettings.tsx` in the shell;
+`target`, `set` and `repSeconds` on the activity, `endsAt()`, the pause between sets, `finishExercise()`, `tapDone()`
+and `tapNextSet()` in `gymStore.ts`. Shell: 19.6 → 22.0 KB (budget 60).
+
+**Changed from this plan, or added to it:**
+- **Every Start has a target,** from the list and from a machine's own menu in the gym. "No target" is still handled
+  (the counter says "7 reps done" and nothing ends the set), but nothing in the app starts one now.
+- **Cardio is what moves at a speed** (treadmill, bike, rower), not "has no weight": pull-ups have no weight and are
+  counted in reps (3 × 12).
+- **Minutes go by one up to 10, then by five** (15, 20 … 60), so a long run is a few taps.
+- **The settings hold only the tempo for now.** Rest lengths, the beep and the buzz come with Block 2, which uses them.
+  Saving keeps anything else stored under `gym3d.settings`, for the Settings tab's own choices (N1).
+- **A set never goes past its target.** If its timer is held up (a phone asleep), it's saved as it would have ended:
+  12 reps, 28.8 s, at the time of day of its twelfth rep.
+- **A change of pace keeps the session's end:** walk 4 minutes, run the rest, and the treadmill stops at the 10 minutes
+  set, with the walk and the run saved as two sets as before. The next set of the round carries on at the pace it
+  ended on.
+- **"Set 1 of 3 done" waits in the gym store** (not `rounds.ts`, which Block 2 adds for rest). It shows on the card,
+  in the header and over the person in the gym. Next set keeps the round's target and re-reads the weight, so the
+  weight can change between sets but the target can't: while a round goes on its target button shows the round's
+  target and says why its − and + are off ("Kept for this round. Change it after Finish.").
+- **Done and Finish:** Done ends the set (and, with sets to come, the round waits); Finish ends the round. Esc, E
+  mid-set, a machine's menu's Stop and going into build mode mean Finish; walking away means Done (V10-D4). A set with
+  no rep yet (or under 10 s of cardio) isn't one of the round's sets. On the last set Done is all there is, so it shows
+  Esc. Picking up the floor dumbbell between sets ends the round.
+- **On a phone every Exercises row is laid out the same way:** the name and History, then the target, the weight and
+  Start. On the narrowest phones (under 360 px) the target takes a line of its own on rows with a weight. Open, the
+  target's steppers take a line under the row.
+- **Four older tests follow the new behaviour:** V7B1-T1 expects 28.8 s (twelve is the target), V6B1-T4 and V6B1-T6
+  the new counter text ("of 10:00", "0 of 12 reps"), and V9B2-T7 the shared stepper and the new phone layout.
+
+**A review** (3 angles, one skeptic per finding; 20 findings): 16 held, several the same thing seen twice, all fixed:
+- **A tap could do two things.** Done and Next set take each other's place, so a double tap on Next set ended set 2 at
+  once, and a Done just as the set ended by itself started the next one. A tap within 0.6 s of the swap is ignored, as
+  Remove and Undo do.
+- **A cardio round ended** when the pace changed in the last 10 s of a set: the part before the change counts now.
+- **A late set got the late time of day** (it could land on the next day): it gets the time it ended, as above.
+- **Between sets the floor dumbbell could be picked up,** two popups overlapped and Next set did nothing: picking it up
+  ends the round.
+- **Focus:** when the card changed under the cursor (a set ending by itself), the cursor was left on a button that had
+  become Finish. Buttons keep their identity now, and the cursor goes on to the new card's next step, or to the page's
+  title when the card goes.
+- **On a phone the popup was wider than the screen** with Finish added: its buttons go under its words there. The header
+  line stays one line (it wrapped and made the gym jump).
+- **Smaller:** the target button's spoken name starts with what it shows ("3 × 12: target for Bicep curls, 3 sets of 12
+  reps"), so it can be tapped by voice; a locked target says why; the gym's popups can't be reached with Tab from
+  another tab.
+
+Four were turned down as choices, not faults: Next set carrying on at the last pace, no key for Next set (Space comes
+in Block 3), Finish being the highlighted button, and a set with no rep not counting.
+
+**Red-checks:** 117 deliberate breaks, one at a time; every one made a test fail. (The first run caught 115: two tests
+were added for the two it missed, a saved number of sets above 10, and a set that ends late.)
+
+**Visual check:** done on the laptop at 320 px, 360 px and 1100 px. The rows and the editor fit with nothing overlapping;
+1 × 2 Bicep curls at Fast ended by itself on the Today tab and was saved with 2 reps in 3.6 s; a 2-set round showed
+"Set 1 of 2 done", Next set ran set 2, and the card went after it; the cursor moved on after Done, after Next set and
+when a set ended by itself. In the gym: 2 × 6 curls at Fast counted "Set 1 of 2 · 2 of 6 reps" over the person, ended by
+itself, the person stepped back off the rack with "Set 1 of 2 done · Next set · Finish" over them, Next set put them back
+on for "Set 2 of 2" (Done with Esc), and Esc finished it. At 360 px the popup's buttons sit under its words, inside the
+screen, and the header line stays one line. The Android check is optional and not done.
+
 ### Block 2: Rest, then the next set
 
 **What you'll see:** when a set ends and more sets remain, the popup (and the header line) turns into **Rest · 1:30 ·

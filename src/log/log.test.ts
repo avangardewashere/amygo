@@ -72,8 +72,10 @@ describe('Today tab: saving finished sets', () => {
       stop()
       const added = savedSets(app).slice(before)
       expect(added, way).toHaveLength(1)
-      expect(added[0], way).toMatchObject({ kind: 'curl', reps: 12, endedAt: DAY_START + t })
-      expect(added[0].seconds, way).toBeCloseTo(29, 1)
+      // (v10: twelve is the set's target, so it's timed to its twelfth rep, 12 × 2.4 s, and ended
+      // then, 0.2 s before it was stopped: a set never goes past its target)
+      expect(added[0], way).toMatchObject({ kind: 'curl', reps: 12, endedAt: DAY_START + t - 200 })
+      expect(added[0].seconds, way).toBeCloseTo(28.8, 1)
     }
   })
 
