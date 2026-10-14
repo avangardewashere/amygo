@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Html, useGLTF } from '@react-three/drei'
 import { MathUtils, Vector3, type Group, type Object3D } from 'three'
@@ -26,6 +26,7 @@ import {
 import { furnitureObstacles, getBuild } from '../build/buildStore'
 import { propObstacles } from '../props/propLayout'
 import { BODY_RADIUS, blocked, closestInReach } from './reach'
+import { watchWalkingAway } from './walkAway'
 
 const WALK_SPEED = 3 // meters per second
 const TURN_SPEED = 12 // how quickly the person turns to face where they walk
@@ -79,6 +80,7 @@ function handsFor(holding: boolean, activity: Activity | null): Hands {
 export function Player() {
   const root = useRef<Group>(null)
   const gait = useRef<Gait>({ amount: 0 })
+  const [walkingAway] = useState(watchWalkingAway)
   const lastActivity = useRef<Activity | null>(null)
   const camera = useThree((state) => state.camera)
   const controls = useThree((state) => state.controls) as unknown as Controls | null
@@ -86,6 +88,8 @@ export function Player() {
   const holding = useGym((s) => s.holding)
   const activity = useGym((s) => s.activity)
   const between = useGym((s) => s.between)
+  // Resting between two sets of a round (not after its last): the resting pose
+  const resting = !activity && between !== null && between.until !== null
 
   useEffect(() => listenToKeyboard(), [])
   useEffect(() => listenToInteractionKeys(), [])
@@ -109,7 +113,9 @@ export function Player() {
     const strength = move.length() // 0…1, a half-pushed joystick walks slower
 
     // Walking away ends the exercise, like the Sims: any move cancels the action
-    if (strength > 0.1 && getGym().activity) stopExercise()
+    // (a stick already held as the set began, the next set of a round starting by
+    // itself under a person walking about, counts only once it's been let go)
+    if (walkingAway(strength, getGym().activity)) stopExercise()
     const current = getGym().activity
 
     // Just finished using a machine you stood on: step back off to where you were
@@ -174,8 +180,8 @@ export function Player() {
   return (
     <group ref={root}>
       {/* While the model file loads, show our own person so there's never a gap */}
-      <Suspense fallback={<Person gait={gait} hands={handsFor(holding, activity)} activity={activity} />}>
-        <Body gait={gait} hands={handsFor(holding, activity)} activity={activity} />
+      <Suspense fallback={<Person gait={gait} hands={handsFor(holding, activity)} activity={activity} resting={resting} />}>
+        <Body gait={gait} hands={handsFor(holding, activity)} activity={activity} resting={resting} />
       </Suspense>
       {holding && <HeldDumbbellMenu />}
       {activity && (

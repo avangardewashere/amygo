@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import { EXERCISES, useGym } from '../interaction/gymStore'
+import { useTicking } from '../lib/ticking'
 import { betweenText, headline, progressText } from '../interaction/activityText'
 import { useBuild } from '../build/buildStore'
 import { ROOM } from '../scene/dimensions'
@@ -9,20 +9,17 @@ import { useTab } from './tabStore'
 import { WELCOME_BUTTON_ID, openWelcome } from './tabs'
 
 // While exercising: "Doing bicep curls · 10 kg · 7 of 12 reps", kept up to date;
-// between two sets: "Bicep curls · Set 1 of 3 done"
+// resting: "Bicep curls · Rest · 1:12 · set 2 of 3 next"; after a round's last
+// set: "Bicep curls · 3 sets done"
 function Doing() {
   const activity = useGym((s) => s.activity)
   const between = useGym((s) => s.between)
-  const [now, setNow] = useState(() => performance.now())
-  useEffect(() => {
-    if (!activity) return
-    const timer = setInterval(() => setNow(performance.now()), 500)
-    return () => clearInterval(timer)
-  }, [activity])
+  const resting = !activity && between !== null && between.until !== null
+  const now = useTicking(activity !== null || resting, 500)
   if (!activity && between) {
     return (
       <p className="shell-doing">
-        {EXERCISES[between.kind].name} · {betweenText(between)}
+        {EXERCISES[between.kind].name} · {betweenText(between, now)}
       </p>
     )
   }

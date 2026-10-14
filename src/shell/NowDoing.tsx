@@ -1,6 +1,18 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { EXERCISES, finishFromList, getGym, paceActions, tapDone, tapNextSet, useGym } from '../interaction/gymStore'
-import { betweenText, headline, progressText } from '../interaction/activityText'
+import { useEffect, useLayoutEffect, useRef } from 'react'
+import {
+  EXERCISES,
+  swapSettled,
+  getGym,
+  paceActions,
+  tapAgain,
+  tapDone,
+  tapFinish,
+  tapMoreRest,
+  tapNextSet,
+  useGym,
+} from '../interaction/gymStore'
+import { betweenText, betweenWords, headline, progressText } from '../interaction/activityText'
+import { useTicking } from '../lib/ticking'
 
 // Which card is showing: a set (each its own), the pause after a set, or none
 const cardOf = ({ activity, between }: ReturnType<typeof getGym>) =>
@@ -8,17 +20,14 @@ const cardOf = ({ activity, between }: ReturnType<typeof getGym>) =>
 
 // What's going on right now, with the same words as the popup in the gym,
 // plus the other paces (treadmill, bike), Done when more sets of a target follow,
-// and Finish. Between two sets: "Set 1 of 3 done", with Next set and Finish.
+// and Finish. Resting between sets: "Rest · 1:12 · set 2 of 3 next", with +30 s,
+// Skip and Finish; after the last: "3 sets done", with Again and Finish.
 // Shown on the Exercises list and on an exercise's history page.
 export function NowDoing() {
   const activity = useGym((s) => s.activity)
   const between = useGym((s) => s.between)
-  const [now, setNow] = useState(() => performance.now())
-  useEffect(() => {
-    if (!activity) return
-    const timer = setInterval(() => setNow(performance.now()), 500)
-    return () => clearInterval(timer)
-  }, [activity])
+  const resting = !activity && between !== null && between.until !== null
+  const now = useTicking(activity !== null || resting, 500)
 
   // The card changes under the cursor: Done and Next set swap it, and so does a
   // set ending by itself. If the button that had the cursor went with it, the
@@ -55,13 +64,25 @@ export function NowDoing() {
       <div className="now-card" role="status">
         <div>
           <strong>{EXERCISES[between.kind].name}</strong>
-          <span>{betweenText(between)}</span>
+          <span aria-hidden="true">{betweenText(between, now)}</span>
+          <span className="visually-hidden">{betweenWords(between)}</span>
         </div>
         <div className="now-actions" ref={actions}>
-          <button key="next" type="button" className="list-button is-primary" data-next onClick={() => tapNextSet()}>
-            Next set
-          </button>
-          <button key="finish" type="button" className="list-button" onClick={finishFromList}>
+          {resting ? (
+            <>
+              <button key="more" type="button" className="list-button" onClick={() => tapMoreRest()}>
+                +30 s
+              </button>
+              <button key="skip" type="button" className="list-button is-primary" data-next onClick={() => tapNextSet()}>
+                Skip
+              </button>
+            </>
+          ) : (
+            <button key="again" type="button" className="list-button is-primary" data-next onClick={() => tapAgain()}>
+              Again
+            </button>
+          )}
+          <button key="finish" type="button" className="list-button" onClick={() => tapFinish()}>
             Finish
           </button>
         </div>
@@ -78,7 +99,7 @@ export function NowDoing() {
       </div>
       <div className="now-actions" ref={actions}>
         {paceActions(activity).map((action) => (
-          <button key={action.label} type="button" className="list-button" onClick={action.run}>
+          <button key={action.label} type="button" className="list-button" onClick={() => swapSettled() && action.run()}>
             {action.label}
           </button>
         ))}
@@ -92,7 +113,7 @@ export function NowDoing() {
           type="button"
           className="list-button is-primary"
           data-next={!moreToCome || undefined}
-          onClick={finishFromList}
+          onClick={() => tapFinish()}
         >
           Finish
         </button>

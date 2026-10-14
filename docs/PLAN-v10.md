@@ -249,6 +249,65 @@ beep step back on. **Phone check (worth doing):** the buzz at zero, and that the
 **Summary:** Sets come in rounds: rest between them with a countdown, a beep and a buzz, the partner resting alongside,
 and the next set starting by itself.
 
+**Status: done** (built and committed 2026-10-15 on branch `v10-train-with-partner`). 180 tests passing (8 new:
+V10B2-T1..T7, with T7 also checked on the 3D model in `human.test.ts`; two older ones updated, see below). **Built:**
+`src/workout/rounds.ts` (the rest's timer, which cues and starts the next set), `src/workout/cues.ts` (the beep and
+the buzz), `src/player/walkAway.ts` (when walking counts as walking away), `src/lib/ticking.ts` (the clock for
+anything that counts on screen); the rest, `again()`, `moreRest()` and the tap pause for every button in
+`gymStore.ts`; `restingPose()` in `poseMath.ts`; rest lengths and the cue switches in the settings and the Workout
+settings section. Shell: 22.0 → 23.4 KB (budget 60).
+
+**Changed from this plan, or added to it:**
+- **Walking about during a rest doesn't end it** (your choice, 2026-10-15: the plan's V10-D4 and T7 disagreed). The
+  countdown carries on and at zero the partner goes back onto the machine; Finish or Esc ends the round. Walking away
+  mid-set is still Done (V10-D4). A stick that's already held when a set begins (the next set starting under someone
+  walking about) doesn't count as walking away until it's let go once.
+- **The rest lives in the gym store** (`between`, which Block 1 added for "Set 1 of 3 done"), not a store of its own:
+  `until` is when it ends, or null after the last set ("3 sets done"). `rounds.ts` is only its timer.
+- **The rest lengths go from 15 s to 5 minutes in steps of 15 s.** +30 s adds to the rest (from now, if its end has
+  passed), up to 10 minutes from now.
+- **Again** after the last set is one more set with the same target, counted as the round's next ("Set 4 of 4").
+  A round of one set (cardio's 1 × 10 minutes) ends with "1 set done", Again and Finish.
+- **The next set goes on the machine the round is on**, wherever the person has wandered (the plan said the same
+  machine; picking the nearest one would have moved it).
+- **The sound is made ready on the tap that starts a set**, and only once the page has been tapped at all (before
+  that, browsers refuse both sound and buzzing, and say so in their console). Switching Beep on is a tap too, so the
+  rest going on beeps.
+- **The countdown is hidden from screen readers**, which hear "Resting 1:30 before set 2 of 3" once instead (and
+  again with the new length after +30 s), rather than every second.
+- **No `shell/clock.ts` tick:** the card, the header and the popup each count with `useTicking`, reading the clock on
+  every tick, so the countdown is right after any pause.
+- **Two older tests follow the new behaviour:** V10B1-T7 (the rest's words and buttons where "Set 1 of 3 done" was,
+  and "3 sets done" after the last set) and V10B1-T5 (the settings hold more than the tempo now). V10B1-T2 and T3 count
+  the rest's timer.
+
+**A review** (3 angles, one skeptic per finding; 18 findings): 14 held, several the same thing seen two or three
+times, all fixed:
+- **Walking as the rest ran out ended the round:** set 2 started, and the next frame took the held stick for walking
+  away from it, with no rep done. The rule about a held stick above fixed it.
+- **Finish had no tap pause, and Skip now sits where Finish appears:** a double tap on Skip could end set 2 at once and
+  the round. Every button on the card and the popup waits out the 0.6 s now, pace buttons included (Walk and Run swap
+  in place); Esc, a key, still works at once.
+- **The hands-on-hips pose put the model's hands into its hips:** the hands now rest at the waist's sides, a little
+  behind, checked on the model itself.
+- **Smaller:** the countdown began at 1:31 for a moment; switching Beep on mid-rest left that rest silent; +30 s gave
+  screen readers no word; two behaviours had no test (Again's tap pause, +30 s after the end has passed).
+
+Four were turned down: the rest buttons' names (the plan's own words), a sleeping phone's clock (not shown to be a
+fault), resuming a sound an iPhone interrupted (iOS isn't a test device), and no buzz while the app is hidden (the
+plan leaves notifications out).
+
+**Red-checks:** 75 deliberate breaks, one at a time; every one made a test fail. (The first run caught 73: two checks
+were added for the two it missed, a saved strength rest read back, and the breath's length.)
+
+**Visual check:** done on the laptop: 3 × 5 Bicep curls at Fast with a 15 s rest, watched in the gym. Set 1 ended by
+itself, the person stepped back off the rack with "Rest · 0:10 · set 2 of 3 next · +30 s · Skip · Finish" over them,
+and at zero stepped back on for set 2; after set 3, "3 sets done · Again · Finish", and Again ran "Set 4 of 4". With a
+1-minute rest the person stood with hands on hips (seen close up on the model), walked about with the rest still
+counting, and was back at the rack for set 2 at zero. The Workout settings section and the rest card fit a 360 px
+screen. **Not checked here:** the beep and the buzz themselves (the laptop's browser pane can't be heard, and has no
+buzz): that's the phone check, which is optional and not done.
+
 ### Block 3: The workout card
 
 **What you'll see:** on a phone, a card across the bottom of the Gym tab, above the tab bar: **Bicep curls · set 2 of

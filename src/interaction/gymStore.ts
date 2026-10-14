@@ -6,8 +6,9 @@ import { catalogEntry, type FurnitureType } from '../build/catalogData'
 import { EXERCISES, type ExerciseKind } from '../exercises/catalog'
 import { nearestMachine } from '../exercises/list'
 import { kgFor } from '../exercises/weights'
-import { targetFor, type Target } from '../exercises/targets'
-import { repSecondsNow } from '../settings/settings'
+import { isCardio, targetFor, type Target } from '../exercises/targets'
+import { getSettings, repSecondsNow } from '../settings/settings'
+import { primeSound } from '../workout/cues'
 import { machine } from '../equipment/machineState'
 import { crankAngle } from '../equipment/bikeGeometry'
 import { REP_SECONDS, repPhase, repsSince } from './reps'
@@ -53,10 +54,21 @@ export type Activity = {
   pace?: { since: number; meters: number; crank: number; counted?: boolean }
 }
 
-// Between two sets of a target (v10): "Set 1 of 3 done", with Next set and
-// Finish. The next set keeps the same target, and starts from where the person
-// stood before the first one. since: when the set ended (exercise clock).
-export type Between = { kind: ExerciseKind; set: number; target: Target; returnTo?: Point; since: number }
+// After a set of a round (v10). With sets to come, the rest before the next
+// one: "Rest · 1:30 · set 2 of 3 next", with +30 s, Skip and Finish; at `until`
+// (exercise clock) the next set starts by itself (see workout/rounds.ts). After
+// the last set (until: null): "3 sets done", with Again and Finish. The next set
+// keeps the round's target, on the same machine, and steps back afterwards to
+// where the person stood before the first one. since: when the set ended.
+export type Between = {
+  kind: ExerciseKind
+  set: number
+  target: Target
+  machineId?: string
+  returnTo?: Point
+  since: number
+  until: number | null
+}
 
 type GymState = {
   holding: boolean // is the person carrying the floor dumbbell?
@@ -178,6 +190,7 @@ function startExercise(
   const { nearFurnitureId, holding } = store.get()
   const piece = getBuild().items.find((item) => item.id === nearFurnitureId)
   if (!piece || holding) return
+  primeSound() // (a tap starts most sets: the one chance to make the rest's beep possible)
   // The weight last picked for it (from the list or here: both read the same store)
   const kg = kgFor(kind)
   const base = {
@@ -221,11 +234,15 @@ function startExercise(
 // Start an exercise from the Exercises list: on the nearest machine of its
 // kind, with the person put straight onto it. Switching from another
 // exercise keeps where they first came from. Returns false if it can't start
-// (no such machine in the gym, or hands full).
-export function startFromList(kind: ExerciseKind, round?: Round & { returnTo?: Point }) {
+// (no such machine in the gym, or hands full). The next set of a round goes
+// on the machine the round is on, while it's there.
+export function startFromList(kind: ExerciseKind, round?: Round & { returnTo?: Point; machineId?: string }) {
   const { holding, activity } = store.get()
   if (holding) return false
-  const piece = nearestMachine(EXERCISES[kind].machine, getBuild().items, playerPose)
+  const { machine: type } = EXERCISES[kind]
+  const items = getBuild().items
+  const same = round?.machineId ? items.find((item) => item.id === round.machineId && item.type === type) : undefined
+  const piece = same ?? nearestMachine(type, items, playerPose)
   if (!piece) return false
   const back = round?.returnTo ?? activity?.returnTo
   stopExercise()
@@ -234,31 +251,67 @@ export function startFromList(kind: ExerciseKind, round?: Round & { returnTo?: P
   return true
 }
 
-// Between sets: the next set of the round, on the nearest machine as from the list
+// The rest is over (Skip, or its end): the round's next set, on its machine
 export function nextSet() {
   const { between } = store.get()
-  if (!between) return false
+  if (!between || between.until === null) return false
   return startFromList(between.kind, { ...between, set: between.set + 1 })
 }
 
-// Done and Next set take each other's place on the card and the popup (a set
-// ends, the pause begins; Next set, a set begins). A tap that lands within this
-// long of the swap was meant for the button that was there, so it's ignored:
-// a double tap on Next set doesn't end set 2 at once, and a Done just as the set
-// ends by itself doesn't start the next one. (Remove and Undo do the same.)
+// After the round's last set: one more, with the same target ("Set 4 of 4")
+export function again() {
+  const { between } = store.get()
+  if (!between || between.until !== null) return false
+  const set = between.set + 1
+  return startFromList(between.kind, { ...between, set, target: { ...between.target, sets: set } as Target })
+}
+
+// +30 s: the rest goes on 30 s longer (counted from now if its end has passed),
+// up to 10 minutes from now
+export const MORE_REST_SECONDS = 30
+export const MAX_REST_SECONDS = 600
+export function moreRest(now = performance.now()) {
+  const { between } = store.get()
+  if (!between || between.until === null) return false
+  const until = Math.min(Math.max(between.until, now) + MORE_REST_SECONDS * 1000, now + MAX_REST_SECONDS * 1000)
+  store.set({ between: { ...between, until } })
+  return true
+}
+
+// How long the rest after a set of `kind` is, in seconds (Workout settings)
+export const restSeconds = (kind: ExerciseKind) => getSettings().rest[isCardio(kind) ? 'cardio' : 'strength']
+
+// The buttons on the card and the popup change under the finger: a set ends
+// and the rest begins (Done gives way to +30 s, Skip and Finish), a set begins
+// (Skip and Again give way to Done and Finish), a pace changes (Run gives way to
+// Walk). A tap that lands within this long of a change was meant for the button
+// that was there, so it's ignored: a double tap on Skip doesn't end set 2 at
+// once, and a Done just as the set ends by itself doesn't skip the rest.
+// (Remove and Undo do the same. Esc, a key, isn't a tap: it always works.)
 export const SWAP_PAUSE_MS = 600
 
-// The buttons' Done and Next set
+// When the buttons last changed: the set began (or changed pace), or the rest
+// (or "3 sets done") began
+function lastChange() {
+  const { activity, between } = store.get()
+  if (activity) return Math.max(activity.startedAt, activity.pace?.since ?? -Infinity)
+  return between?.since ?? -Infinity
+}
+export const swapSettled = (now = performance.now()) => now - lastChange() >= SWAP_PAUSE_MS
+
+// The buttons' Done, Skip, Again, +30 s and Finish (pace buttons: swapSettled() first)
 export function tapDone(now = performance.now()) {
-  const { activity } = store.get()
-  if (!activity || now - activity.startedAt < SWAP_PAUSE_MS) return false
+  if (!store.get().activity || !swapSettled(now)) return false
   stopExercise()
   return true
 }
-export function tapNextSet(now = performance.now()) {
-  const { between } = store.get()
-  if (!between || now - between.since < SWAP_PAUSE_MS) return false
-  return nextSet()
+export const tapNextSet = (now = performance.now()) => swapSettled(now) && nextSet()
+export const tapAgain = (now = performance.now()) => swapSettled(now) && again()
+export const tapMoreRest = (now = performance.now()) => swapSettled(now) && moreRest(now)
+export function tapFinish(now = performance.now()) {
+  if (!swapSettled(now)) return false
+  finishExercise()
+  return true
 }
 
 // Finish: the set ends and is saved, and so does the round (no next set).
@@ -324,8 +377,8 @@ function switchPace(kind: ExerciseKind) {
 }
 
 // The set ends here and is saved (see log/logStore.ts): Done, the set's own end,
-// walking away. If it was one of a round with more to come, and it counts as a
-// set, the round waits for Next set or Finish.
+// walking away (decision V10-D4). If it was one of a round and it counts as a
+// set, the rest before the next set begins, or after the last, "3 sets done".
 export function stopExercise() {
   const { activity } = store.get()
   if (!activity) return
@@ -337,18 +390,21 @@ export function stopExercise() {
   store.set({ activity: null, menu: null, between: roundGoesOn(activity) })
 }
 
-// What a round looks like after `activity` ends now: waiting for its next set,
-// or over (null). A set that didn't count (never begun, or under a rep or 10 s
-// of cardio, so nothing of it saved) isn't one of its sets. Counted up to its
-// end, as it's saved (see log/sets.ts), even if it ends late.
+// What a round looks like after `activity` ends now: resting before its next
+// set, done (its last set), or over (null). A set that didn't count (never
+// begun, or under a rep or 10 s of cardio, so nothing of it saved) isn't one of
+// its sets. Counted up to its end, as it's saved (see log/sets.ts), even if it
+// ends late; the rest is counted from now.
 function roundGoesOn(activity: Activity, now = performance.now()): Between | null {
-  const { kind, target, set = 1, returnTo } = activity
-  if (!target || set >= target.sets || !activity.arrived) return null
+  const { kind, target, set = 1, returnTo, machineId } = activity
+  if (!target || !activity.arrived) return null
   const at = Math.min(now, endsAt(activity) ?? now)
   const counted = EXERCISES[kind].speed
     ? activity.pace?.counted === true || paceSeconds(activity, at) >= MIN_CARDIO_SECONDS
     : repsDone(activity, now) >= MIN_REPS
-  return counted ? { kind, set, target, ...(returnTo && { returnTo }), since: now } : null
+  if (!counted) return null
+  const until = set < target.sets ? now + restSeconds(kind) * 1000 : null
+  return { kind, set, target, machineId, ...(returnTo && { returnTo }), since: now, until }
 }
 
 // Where the person goes when `previous` gives way to `current`: if the session

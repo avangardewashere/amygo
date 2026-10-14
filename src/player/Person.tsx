@@ -2,7 +2,7 @@ import { useRef, type ReactNode, type RefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { MathUtils, type Group } from 'three'
 import { paceSeconds, repProgress, type Activity } from '../interaction/gymStore'
-import { arm, exercisePose, legJoints } from './poseMath'
+import { arm, exercisePose, legJoints, restingPose } from './poseMath'
 import type { Rig } from './humanRig'
 import {
   ELBOW_DROP,
@@ -46,6 +46,7 @@ const JOINT_EASE = 14 // how fast joints move toward their target angle
 // JOINT_EASE would let hands and feet trail ~7 cm behind, so track closely
 const FOLLOW_EASE = 60
 const POSTURE_EASE = 8 // how fast the body leans back into a seat or lies down
+const STILL = 0.1 // walking less than this counts as standing still
 
 // Thickness of each capsule, and how long it must be to span its joints
 // (a capsule's length doesn't count its rounded ends, which add one radius each)
@@ -55,8 +56,9 @@ const span = (drop: number, radius: number) => Math.max(drop - 2 * radius + 0.02
 const TORSO_BOTTOM = HIP_Y - 0.04
 const TORSO_TOP = SHOULDER_Y + 0.1
 
-// What any body for the player receives (so looks can be swapped, see <Player>)
-export type PersonProps = { gait: RefObject<Gait>; hands?: Hands; activity?: Activity | null }
+// What any body for the player receives (so looks can be swapped, see <Player>).
+// resting: between two sets of a round (hands on hips, while standing still)
+export type PersonProps = { gait: RefObject<Gait>; hands?: Hands; activity?: Activity | null; resting?: boolean }
 
 // Extra options for driving another look with this body's joints (see HumanPerson):
 //   hidden: animate the joints but don't draw the capsules
@@ -66,7 +68,7 @@ type DriverProps = { hidden?: boolean; onPosed?: (rig: Rig) => void }
 // A simple person (~1.8 m tall) made of capsules and spheres. Faces +z.
 // Every limb is wrapped in a group placed at its joint (hip, knee, shoulder,
 // elbow), so rotating the group swings the limb from the joint, not its middle.
-export function Person({ gait, hands = {}, activity = null, hidden = false, onPosed }: PersonProps & DriverProps) {
+export function Person({ gait, hands = {}, activity = null, resting = false, hidden = false, onPosed }: PersonProps & DriverProps) {
   const show = !hidden
   const body = useRef<Group>(null)
   const posture = useRef<Group>(null) // leans the whole body back, pivoting at the hips
@@ -82,8 +84,13 @@ export function Person({ gait, hands = {}, activity = null, hidden = false, onPo
     const amount = gait.current.amount
     phase.current += delta * STRIDE_SPEED * amount
     const swing = Math.sin(phase.current) * SWING * amount
-    // Still stepping onto a machine: stand normally until there
-    const pose = activity?.arrived ? exercisePose(activity, repProgress(activity), paceSeconds(activity)) : null
+    // Still stepping onto a machine: stand normally until there. Resting between
+    // sets: hands on hips, unless walking about
+    const pose = activity?.arrived
+      ? exercisePose(activity, repProgress(activity), paceSeconds(activity))
+      : resting && amount < STILL
+        ? restingPose(performance.now() / 1000)
+        : null
     const jointSpeed = pose?.follow ? FOLLOW_EASE : JOINT_EASE
     const ease = (from: number, to: number, speed = jointSpeed) => MathUtils.damp(from, to, speed, delta)
 

@@ -5,6 +5,7 @@ import { followWeights } from '../exercises/weights'
 import { followOtherWindows, startLogging } from '../log/logStore'
 import { followSettings } from '../settings/settings'
 import { startEnding } from '../workout/ending'
+import { startRounds } from '../workout/rounds'
 import { isFirstVisit } from './firstVisit'
 import { listenForInstall } from './install'
 import { setWelcome } from './tabStore'
@@ -20,8 +21,9 @@ export function startApp() {
   const stopFollowingWeights = followWeights() // (and the weights, targets and settings picked there)
   const stopFollowingTargets = followTargets()
   const stopFollowingSettings = followSettings()
-  // A set with a target ends by itself, on any tab
+  // A set with a target ends by itself, on any tab; so does the rest after it
   const stopEnding = startEnding()
+  const stopRounds = startRounds()
   // Android's back gesture (and Escape) closes an exercise's history page
   const stopBack = listenToBack()
   // Escape closes the welcome card
@@ -35,6 +37,7 @@ export function startApp() {
     stopFollowingTargets()
     stopFollowingSettings()
     stopEnding()
+    stopRounds()
     stopBack()
     stopWelcomeKeys()
     stopInstall()

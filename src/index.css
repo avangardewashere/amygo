@@ -940,6 +940,44 @@ body,
   color: #fff;
 }
 
+/* Rest between sets: Strength − 1:30 +, Cardio − 1:00 + (the two steppers lined up) */
+.workout-settings .page-note + .setting-row {
+  margin-top: 14px;
+}
+
+.rest-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.rest-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rest-choice > span {
+  min-width: 5.2em;
+}
+
+/* The beep and the buzz, on or off */
+.setting-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.setting-toggle input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: #e4572e;
+}
+
 /* For screen readers only (a weight change is read out from here) */
 .visually-hidden {
   position: absolute;

@@ -12,7 +12,7 @@ import { ADJ, hipsAgainstBackrest, leanFor } from '../equipment/adjustableBenchG
 import { BAR_ON_BACK, SQUAT, squatPosition } from '../equipment/squatGeometry'
 import { CABLE, pushdownArm, rowPosition as cableRowPosition } from '../equipment/cableGeometry'
 import { PULLUP, pullupPosition } from '../equipment/pullupGeometry'
-import { ELBOW_DROP, FOOT_DROP, HAND_DROP, HIP_Y, KNEE_DROP, SHOE_Y, SHOULDER_X, SHOULDER_Y } from './proportions'
+import { ELBOW_DROP, FOOT_DROP, HAND_DROP, HIP_Y, KNEE_DROP, SHOE_Y, SHOULDER_X, SHOULDER_Y, TORSO_RADIUS } from './proportions'
 
 const FEET_FORWARD = 0.38 // seated: feet planted this far in front of the hips
 
@@ -151,6 +151,27 @@ export function exercisePose(
       return pullupPose(t)
     default:
       return null
+  }
+}
+
+// Resting between sets (v10): standing, hands on the hips with the elbows out,
+// breathing slowly, which sways the body a little back and forth, once every
+// BREATH_SECONDS. (Legs: the standing legs, as when not walking.)
+export const BREATH_SECONDS = 4
+// Each hand, from the middle of the body: at the side of the waist and a little
+// behind it, so the imported model's hands rest on its hips instead of in them
+export const HANDS_ON_HIPS = { x: TORSO_RADIUS + 0.14, y: HIP_Y + 0.21, z: -0.1 }
+export function restingPose(seconds: number): BodyPose {
+  const breath = Math.sin((seconds / BREATH_SECONDS) * Math.PI * 2)
+  return {
+    lean: 0.02 * breath,
+    foot: null,
+    arms: (side) =>
+      armTo3D(
+        side,
+        { x: side * (HANDS_ON_HIPS.x - SHOULDER_X), y: HANDS_ON_HIPS.y - SHOULDER_Y, z: HANDS_ON_HIPS.z },
+        { out: 1.2, back: 0.3 },
+      ),
   }
 }
 

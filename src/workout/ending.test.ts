@@ -85,7 +85,7 @@ describe('A set with a target', { timeout: 30_000 }, () => {
     expect(doing(app)).toBeNull()
     expect(saved(app)).toHaveLength(1)
     expect(saved(app)[0]).toMatchObject({ kind: 'curl', reps: 12, seconds: 28.8 })
-    expect(vi.getTimerCount()).toBe(0)
+    expect(vi.getTimerCount()).toBe(1) // (its end timer went; this one is the rest's, before set 2: Block 2)
 
     // A set's end comes from its target and tempo: exactly 12 × 2.4 s after it began
     expect(app.gym.endsAt(set)).toBeCloseTo(set.startedAt + 28_800, 6)
@@ -121,7 +121,7 @@ describe('A set with a target', { timeout: 30_000 }, () => {
     expect(source['/src/interaction/ActivityBubble.tsx']).toMatch(/onClick=\{\(\) => tapDone\(\)\}>\s*Done/)
     app.gym.stopExercise()
     expect(saved(app).at(-1)).toMatchObject({ kind: 'curl', reps: 7 })
-    expect(vi.getTimerCount()).toBe(0) // its end timer went with it
+    expect(vi.getTimerCount()).toBe(1) // its end timer went with it (this one is the rest's: Block 2)
     pass(60)
     expect(saved(app)).toHaveLength(1) // and nothing ends late
 
@@ -210,7 +210,7 @@ describe('A set with a target', { timeout: 30_000 }, () => {
     expect(startup['/src/shell/startup.ts']).toMatch(/const stopEnding = startEnding\(\)[\s\S]*stopEnding\(\)/)
   })
 
-  it('V10B1-T7: between sets the card says "Set 1 of 3 done" with Next set and Finish; the round keeps its target to the last set', async () => {
+  it('V10B1-T7: between sets the card says what comes next, with Finish; the round keeps its target to the last set', async () => {
     const app = await openApp()
     app.tabs.setTab('exercises')
     app.weights.setKg('curl', 10)
@@ -226,12 +226,13 @@ describe('A set with a target', { timeout: 30_000 }, () => {
     pass(12 * REP + 0.1)
 
     // Set 1 is saved, and the round waits: on the card, in the header and over the person in the gym
+    // (Block 2: it rests, "Rest · 1:30 · set 2 of 3 next", with +30 s, Skip and Finish)
     expect(saved(app)).toHaveLength(1)
     expect(app.gym.getGym().between).toMatchObject({ kind: 'curl', set: 1, target: { sets: 3, reps: 12 } })
-    expect(await nowCard()).toBe('Bicep curls Set 1 of 3 done Next set Finish')
-    expect(await header()).toContain('Bicep curls · Set 1 of 3 done')
+    expect(await nowCard()).toBe('Bicep curls Rest · 1:30 · set 2 of 3 next Resting 1:30 before set 2 of 3 +30 s Skip Finish')
+    expect(await header()).toContain('Bicep curls · Rest · 1:30 · set 2 of 3 next')
     expect(text(renderToString(createElement(BetweenBubble, { between: app.gym.getGym().between! })))).toBe(
-      'Bicep curls Set 1 of 3 done Next set Finish Esc',
+      'Bicep curls Rest · 1:30 · set 2 of 3 next Resting 1:30 before set 2 of 3 +30 s Skip Finish Esc',
     )
 
     // The round keeps its target: a change now is for the next round
@@ -252,12 +253,15 @@ describe('A set with a target', { timeout: 30_000 }, () => {
     expect(await nowCard()).toBe('Doing bicep curls · 12 kg Set 3 of 3 · 0 of 12 reps Finish')
     pass(12 * REP + 0.1)
     expect(doing(app)).toBeNull()
-    expect(app.gym.getGym().between).toBeNull() // after the last set the round is over
+    // After the last set there's no rest (Block 2: "3 sets done", with Again and Finish)
+    expect(app.gym.getGym().between).toMatchObject({ set: 3, until: null })
     expect(saved(app).map((set) => [set.reps, set.kg])).toEqual([
       [12, 10],
       [12, 12],
       [12, 12],
     ])
+    expect(await nowCard()).toBe('Bicep curls 3 sets done 3 sets done Again Finish')
+    app.gym.finishFromList()
     expect(await nowCard()).toBe('')
 
     // Finish between sets ends the round; Finish (or Esc, or Stop) mid-set ends it with no next set
@@ -372,10 +376,14 @@ describe('A set with a target', { timeout: 30_000 }, () => {
       eager: true,
     }) as Record<string, string>
     const card = sources['/src/shell/NowDoing.tsx']
-    expect(card).toMatch(/key="next" [^>]*data-next onClick=\{\(\) => tapNextSet\(\)\}>\s*Next set/)
-    expect(card).toMatch(/key="finish" [^>]*onClick=\{finishFromList\}>\s*Finish/)
+    // (Block 2: Skip and +30 s while resting; Again after the last set)
+    expect(card).toMatch(/key="skip" [^>]*data-next onClick=\{\(\) => tapNextSet\(\)\}>\s*Skip/)
+    expect(card).toMatch(/key="more" [^>]*onClick=\{\(\) => tapMoreRest\(\)\}>\s*\+30 s/)
+    expect(card).toMatch(/key="again" [^>]*data-next onClick=\{\(\) => tapAgain\(\)\}>\s*Again/)
+    // (Block 2: Finish waits out the swap pause too, as Skip moves to where it appears)
+    expect(card).toMatch(/key="finish" [^>]*onClick=\{\(\) => tapFinish\(\)\}>\s*Finish/)
     expect(card).toMatch(/key="done" [^>]*data-next onClick=\{\(\) => tapDone\(\)\}>\s*Done/)
-    expect(card).toMatch(/key="finish"\s*type="button"\s*className="list-button is-primary"\s*data-next=\{!moreToCome \|\| undefined\}\s*onClick=\{finishFromList\}/)
+    expect(card).toMatch(/key="finish"\s*type="button"\s*className="list-button is-primary"\s*data-next=\{!moreToCome \|\| undefined\}\s*onClick=\{\(\) => tapFinish\(\)\}/)
     // The card changes under the cursor (Done, Next set, a set ending by itself): if the button
     // with the cursor went, the cursor goes on to the new card's next step, or to the page's title
     // (where the cursor is: noticed as it moves, and after every redraw, before which the card's change is checked)
@@ -397,8 +405,10 @@ describe('A set with a target', { timeout: 30_000 }, () => {
     )
     expect(sources['/src/interaction/ActivityBubble.tsx'].match(/<div className="bubble-actions">/g)).toHaveLength(2)
     expect(css).toMatch(/\.shell-doing \{\n  overflow: hidden;[\s\S]*?text-overflow: ellipsis;\n  white-space: nowrap;\n\}/)
-    expect(sources['/src/interaction/ActivityBubble.tsx']).toMatch(/onClick=\{\(\) => tapNextSet\(\)\}>\s*Next set/)
-    expect(sources['/src/interaction/ActivityBubble.tsx']).toMatch(/onClick=\{finishExercise\}>\s*Finish/)
+    expect(sources['/src/interaction/ActivityBubble.tsx']).toMatch(/onClick=\{\(\) => tapNextSet\(\)\}>\s*Skip/)
+    expect(sources['/src/interaction/ActivityBubble.tsx']).toMatch(/onClick=\{\(\) => tapMoreRest\(\)\}>\s*\+30 s/)
+    expect(sources['/src/interaction/ActivityBubble.tsx']).toMatch(/onClick=\{\(\) => tapAgain\(\)\}>\s*Again/)
+    expect(sources['/src/interaction/ActivityBubble.tsx']).toMatch(/onClick=\{\(\) => tapFinish\(\)\}>\s*Finish/)
     // Esc in the gym, and its menu's Stop, mean Finish
     expect(sources['/src/interaction/gymStore.ts']).toMatch(/e\.code === 'Escape'\) \{\s*if \(state\.menu\) closeMenu\(\)\s*else finishExercise\(\)/)
     expect(sources['/src/interaction/gymStore.ts']).toMatch(/\{ label: 'Stop', run: finishExercise \}/)

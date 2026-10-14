@@ -57,6 +57,20 @@ export function progressText(activity: Counted, nowRead: number) {
   return reps === 0 ? 'First rep…' : `${reps} ${reps === 1 ? 'rep' : 'reps'} done`
 }
 
-// Between two sets of a round: "Set 1 of 3 done"
-export const betweenText = (between: Pick<Between, 'set' | 'target'>) =>
-  `Set ${between.set} of ${between.target.sets} done`
+// After a set of a round: the rest before the next ("Rest · 1:30 · set 2 of 3
+// next", counted down from its end, so it's right whenever it's read), or after
+// the last set, "3 sets done"
+// (A clock read before the rest began, by a display that last ticked earlier, counts as its start.)
+export function betweenText(between: Pick<Between, 'set' | 'target' | 'since' | 'until'>, now: number) {
+  if (between.until === null) return `${between.set} ${between.set === 1 ? 'set' : 'sets'} done`
+  const left = Math.max(0, Math.ceil((between.until - Math.max(now, between.since)) / 1000))
+  return `Rest · ${clock(left)} · set ${between.set + 1} of ${between.target.sets} next`
+}
+
+// The same for a screen reader, without the seconds ticking by (a status line
+// that changed every second would be read out every second): the rest's length
+// instead, which changes, and is read out, when +30 s makes it longer
+export const betweenWords = (between: Pick<Between, 'set' | 'target' | 'since' | 'until'>) =>
+  between.until === null
+    ? betweenText(between, 0)
+    : `Resting ${clock(Math.round((between.until - between.since) / 1000))} before set ${between.set + 1} of ${between.target.sets}`

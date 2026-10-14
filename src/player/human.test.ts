@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { Vector3, type Bone, type Object3D } from 'three'
 // The model file itself, embedded by Vite as text (base64)
 import manGlb from '../../public/models/man.glb?inline'
-import { exercisePose } from './poseMath'
+import { exercisePose, HANDS_ON_HIPS, restingPose } from './poseMath'
 import { buildBody } from './bodyKinematics'
 import { BONE_FOR, missingBones, modelFoot, modelHand, poseModel, prepareModel, type HumanModel } from './humanRig'
 import { ELBOW_DROP, FOOT_DROP, HAND_DROP, HIP_X, HIP_Y, KNEE_DROP, SHOULDER_X, SHOULDER_Y } from './proportions'
@@ -85,6 +85,29 @@ describe('human model', () => {
         }
         root.remove(model.scene)
       }
+    }
+  })
+
+  it("V10B2-T7: resting between sets, the model's hands land on ours: on the hips' sides, a little behind, never in the body", async () => {
+    const model = await freshModel()
+    for (const seconds of [0, 1, 2, 3]) {
+      const { root, rig, hands } = buildBody(restingPose(seconds))
+      root.add(model.scene)
+      root.updateMatrixWorld(true)
+      poseModel(model, rig)
+      for (const [side, out] of [
+        [0, 1],
+        [1, -1],
+      ] as const) {
+        const ours = hands[side].getWorldPosition(new Vector3())
+        const theirs = modelHand(model, side)
+        expect(theirs.distanceTo(ours), `t=${seconds} hand ${side}`).toBeLessThan(0.01)
+        // Out at the side of the waist, clear of the hips (whose joints are HIP_X out), and behind the hip line
+        expect(theirs.x * out, `t=${seconds} hand ${side}`).toBeGreaterThan(HIP_X + 0.1)
+        expect(theirs.y, `t=${seconds} hand ${side}`).toBeCloseTo(HANDS_ON_HIPS.y, 1)
+        expect(theirs.z, `t=${seconds} hand ${side}`).toBeLessThan(-0.05)
+      }
+      root.remove(model.scene)
     }
   })
 })

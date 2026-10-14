@@ -53,7 +53,7 @@ describe('Workout settings', { timeout: 30_000 }, () => {
 
     // Slow 3.5 s · Normal 2.4 s · Fast 1.8 s a rep (decision P-D2); Normal at first, the rep clock's own pace
     expect(TEMPOS).toEqual({ slow: 3.5, normal: 2.4, fast: 1.8 })
-    expect(getSettings()).toEqual({ tempo: 'normal' })
+    expect(getSettings()).toMatchObject({ tempo: 'normal' })
     expect(repSecondsNow()).toBe(app.reps.REP_SECONDS)
     for (const [tempo, seconds] of Object.entries(TEMPOS)) {
       setTempo(tempo as keyof typeof TEMPOS)
@@ -110,15 +110,15 @@ describe('Workout settings', { timeout: 30_000 }, () => {
     // The choice is saved in this browser, beside whatever else is saved under the same key (the Settings tab's own choices)
     app.storage.data.set(SETTINGS, JSON.stringify({ graphics: 'low', tempo: 'slow' }))
     setTempo('fast')
-    expect(JSON.parse(app.storage.data.get(SETTINGS)!)).toEqual({ graphics: 'low', tempo: 'fast' })
+    expect(JSON.parse(app.storage.data.get(SETTINGS)!)).toMatchObject({ graphics: 'low', tempo: 'fast' })
     // …so a reload brings it back
-    expect((await openApp(app.storage)).settings.getSettings()).toEqual({ tempo: 'fast' })
+    expect((await openApp(app.storage)).settings.getSettings()).toMatchObject({ tempo: 'fast' })
     // A saved tempo that isn't one of the three, or a saved value that can't be read, is Normal
     for (const bad of [{ tempo: 'warp' }, { tempo: 1.8 }, { tempo: 'toString' }]) {
       const fresh = await openApp(fakeStorage({ [SETTINGS]: JSON.stringify(bad) }))
-      expect(fresh.settings.getSettings(), JSON.stringify(bad)).toEqual({ tempo: 'normal' })
+      expect(fresh.settings.getSettings(), JSON.stringify(bad)).toMatchObject({ tempo: 'normal' })
     }
-    expect((await openApp(fakeStorage({ [SETTINGS]: '{oops' }))).settings.getSettings()).toEqual({ tempo: 'normal' })
+    expect((await openApp(fakeStorage({ [SETTINGS]: '{oops' }))).settings.getSettings()).toMatchObject({ tempo: 'normal' })
     // With storage blocked nothing throws, and the choice holds until the page closes
     const blocked = await openApp(fakeStorage({}, { broken: true }))
     expect(() => blocked.settings.setTempo('slow')).not.toThrow()
@@ -129,7 +129,7 @@ describe('Workout settings', { timeout: 30_000 }, () => {
     const stop = tab.settings.followSettings(other)
     app.storage.data.set(SETTINGS, JSON.stringify({ tempo: 'slow' }))
     other.dispatchEvent(Object.assign(new Event('storage'), { key: SETTINGS }))
-    expect(tab.settings.getSettings()).toEqual({ tempo: 'slow' })
+    expect(tab.settings.getSettings()).toMatchObject({ tempo: 'slow' })
     stop()
     // …and the app itself follows it: startApp(), which main.tsx calls, listens on the real
     // window, to its own key and to storage being cleared, not to other keys
@@ -139,12 +139,12 @@ describe('Workout settings', { timeout: 30_000 }, () => {
     const stopApp = (await import('../shell/startup')).startApp()
     wired.storage.data.set(SETTINGS, JSON.stringify({ tempo: 'fast' }))
     browserWindow.dispatchEvent(Object.assign(new Event('storage'), { key: 'gym3d.weights' }))
-    expect(wired.settings.getSettings()).toEqual({ tempo: 'normal' })
+    expect(wired.settings.getSettings()).toMatchObject({ tempo: 'normal' })
     browserWindow.dispatchEvent(Object.assign(new Event('storage'), { key: SETTINGS }))
-    expect(wired.settings.getSettings()).toEqual({ tempo: 'fast' })
+    expect(wired.settings.getSettings()).toMatchObject({ tempo: 'fast' })
     wired.storage.data.clear()
     browserWindow.dispatchEvent(Object.assign(new Event('storage'), { key: null }))
-    expect(wired.settings.getSettings()).toEqual({ tempo: 'normal' })
+    expect(wired.settings.getSettings()).toMatchObject({ tempo: 'normal' })
     stopApp()
     wired.settings.setTempo('slow')
 
