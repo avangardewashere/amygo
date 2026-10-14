@@ -3,10 +3,12 @@ import { EXERCISES, MACHINE_NAMES, type ExerciseKind } from '../exercises/catalo
 import { LOAD_MEANS } from '../exercises/load'
 import { useBuild } from '../build/buildStore'
 import { startFromList, useGym } from '../interaction/gymStore'
-import { removeSet, useLog } from '../log/logStore'
+import { cancelEdit } from '../log/editing'
+import { forgetRemoved, useLog } from '../log/logStore'
 import { emptyHistory, finishedAt, setDay, setLength, setNumbers } from '../log/logText'
 import { bestSet, setsOf } from '../log/sets'
 import { NowDoing } from './NowDoing'
+import { SetAnnouncer, SetRows } from './SetRows'
 import { WeightStepper } from './WeightStepper'
 import { useNow } from './clock'
 import { closeHistory } from './tabs'
@@ -19,6 +21,9 @@ export function ExerciseHistoryPage({ kind, now }: { kind: ExerciseKind; now?: n
   const sets = useLog((s) => s.sets)
   const clock = useNow(now)
   const mine = useMemo(() => setsOf(sets, kind), [sets, kind])
+  // Its sets just removed keep their place for a few seconds, with Undo
+  const removed = useLog((s) => s.removed)
+  const removedMine = useMemo(() => removed.filter((set) => set.kind === kind), [removed, kind])
   const best = useMemo(() => bestSet(mine), [mine])
   const items = useBuild((s) => s.items)
   const doing = useGym((s) => s.activity?.kind) === kind
@@ -29,6 +34,15 @@ export function ExerciseHistoryPage({ kind, now }: { kind: ExerciseKind; now?: n
   // Focus moves to the page's title, so keyboards and screen readers start here
   const title = useRef<HTMLHeadingElement>(null)
   useEffect(() => title.current?.focus(), [kind])
+
+  // Leaving the page: an open form closes unsaved, and what was removed stays removed
+  useEffect(
+    () => () => {
+      cancelEdit()
+      forgetRemoved()
+    },
+    [kind],
+  )
 
   return (
     <section className="page history-page" aria-labelledby="history-title">
@@ -65,44 +79,36 @@ export function ExerciseHistoryPage({ kind, now }: { kind: ExerciseKind; now?: n
         </div>
       )}
 
-      {mine.length === 0 || !best ? (
+      {mine.length === 0 && removedMine.length === 0 ? (
         <p className="page-note history-empty">{emptyHistory(kind)}</p>
       ) : (
         <>
-          <div className="history-stats">
-            <div>
-              <span>Last time</span>
-              <strong>{setNumbers(mine[0])}</strong>
-              <small>{setDay(mine[0], clock)}</small>
+          {best && (
+            <div className="history-stats">
+              <div>
+                <span>Last time</span>
+                <strong>{setNumbers(mine[0])}</strong>
+                <small>{setDay(mine[0], clock)}</small>
+              </div>
+              <div>
+                <span>Best</span>
+                <strong>{setNumbers(best)}</strong>
+                <small>{setDay(best, clock)}</small>
+              </div>
             </div>
-            <div>
-              <span>Best</span>
-              <strong>{setNumbers(best)}</strong>
-              <small>{setDay(best, clock)}</small>
-            </div>
-          </div>
+          )}
           <h3 className="earlier-title">
             All sets · {mine.length}
           </h3>
-          <ul className="set-list">
-            {mine.map((set) => (
-              <li key={set.id}>
-                <div>
-                  <strong>
-                    {setDay(set, clock)} · {finishedAt(set)}
-                  </strong>
-                  <span>
-                    {setNumbers(set)} · {setLength(set)}
-                  </span>
-                </div>
-                <button type="button" className="list-button" onClick={() => removeSet(set.id)}>
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
+          <SetRows
+            sets={mine}
+            removed={removedMine}
+            heading={(set) => `${setDay(set, clock)} · ${finishedAt(set)}`}
+            detail={(set) => `${setNumbers(set)} · ${setLength(set)}`}
+          />
         </>
       )}
+      <SetAnnouncer />
     </section>
   )
 }

@@ -173,8 +173,13 @@ describe('Today tab: saving finished sets', () => {
 
     // The page itself
     const { TodayPage, EMPTY_TODAY } = await import('../shell/TodayPage')
-    // (React marks where separate pieces of text meet with <!-- -->; a reader sees one line)
-    const html = renderToString(createElement(TodayPage, { now })).replaceAll('<!-- -->', '')
+    // (React marks where separate pieces of text meet with <!-- -->; a reader sees one line. A row's text is
+    // drawn in parts that stay together on a narrow phone; it's read here as plain text, and without the
+    // buttons' spoken names, which repeat it.)
+    const html = renderToString(createElement(TodayPage, { now }))
+      .replaceAll('<!-- -->', '')
+      .replace(/<span class="part">([^<]*)<\/span>/g, '$1')
+      .replace(/ aria-label="[^"]*"/g, '')
     expect(html).toContain('2 sets · 5 min')
     expect(html.indexOf('Back squat')).toBeGreaterThan(-1)
     expect(html.indexOf('Back squat')).toBeLessThan(html.indexOf('Walk')) // newest first
@@ -227,8 +232,9 @@ describe('Today tab: saving finished sets', () => {
     const logFiles = Object.keys(sources).filter((file) => file.startsWith('/src/log/') && !file.endsWith('.test.ts'))
     const fromLog = reach([...logFiles, '/src/shell/TodayPage.tsx'])
     expect(fromLog.problems).toEqual([])
-    // No components besides the page itself (measurement files like proportions.ts are plain numbers)
-    expect([...fromLog.seen].filter((file) => file.endsWith('.tsx') && file !== '/src/shell/TodayPage.tsx')).toEqual([])
+    // No components besides the page itself and its set rows (shared with an exercise's history page);
+    // measurement files like proportions.ts are plain numbers
+    expect([...fromLog.seen].filter((file) => file.endsWith('.tsx') && file !== '/src/shell/TodayPage.tsx')).toEqual(['/src/shell/SetRows.tsx'])
     // It's part of the shell (so the shell's size budget, V6B3-T2, measures it)
     const shell = reach(['/src/main.tsx']).seen
     for (const file of [...logFiles, '/src/shell/TodayPage.tsx']) expect(shell.has(file), file).toBe(true)

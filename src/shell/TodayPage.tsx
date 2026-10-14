@@ -2,32 +2,26 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { EXERCISES } from '../exercises/catalog'
 import { takePickedFile } from '../lib/files'
 import { restoreText } from '../log/backup'
-import { backUpLog, clearHistory, MAX_SETS, removeSet, restoreFile, useLog } from '../log/logStore'
+import { cancelEdit } from '../log/editing'
+import { backUpLog, clearHistory, forgetRemoved, MAX_SETS, restoreFile, useLog } from '../log/logStore'
 import { dayLabel, daySummary, finishedAt, setLength, setNumbers, totalsText } from '../log/logText'
 import { dayKey, daysOf, todaysSets, totals, type LoggedSet } from '../log/sets'
+import { SetAnnouncer, SetRows } from './SetRows'
 import { useNow } from './clock'
 
 export const EMPTY_TODAY = 'No sets yet today. Start one from Exercises.'
 export const LOG_TOOLS_NOTE = "Saved in this browser only. Back up makes a file of your log; Restore adds a file's sets here."
 
-// One saved set, with Remove for a set you didn't mean to save
-function SetList({ sets }: { sets: LoggedSet[] }) {
+// A day's sets, each with Edit and Remove (see SetRows.tsx): the exercise, then
+// its numbers, how long it took and when it finished
+function SetList({ sets, removed }: { sets: LoggedSet[]; removed: LoggedSet[] }) {
   return (
-    <ul className="set-list">
-      {sets.map((set) => (
-        <li key={set.id}>
-          <div>
-            <strong>{EXERCISES[set.kind].name}</strong>
-            <span>
-              {setNumbers(set)} · {setLength(set)} · {finishedAt(set)}
-            </span>
-          </div>
-          <button type="button" className="list-button" onClick={() => removeSet(set.id)}>
-            Remove
-          </button>
-        </li>
-      ))}
-    </ul>
+    <SetRows
+      sets={sets}
+      removed={removed}
+      heading={(set) => EXERCISES[set.kind].name}
+      detail={(set) => `${setNumbers(set)} · ${setLength(set)} · ${finishedAt(set)}`}
+    />
   )
 }
 
@@ -84,24 +78,44 @@ function LogTools({ hasSets }: { hasSets: boolean }) {
 
 // The Today page: every set finished today, newest first, with what it added
 // up to; then the earlier days, each opening to its own sets; then the log's
-// tools (Back up, Restore, Clear history).
+// tools (Back up, Restore, Clear history). Each set can be fixed (Edit) or
+// removed; a removed one stays in its place for a few seconds with Undo.
 // Days are counted from the shared clock (see clock.ts). (`now` is for tests.)
 export function TodayPage({ now }: { now?: number }) {
   const sets = useLog((s) => s.sets)
+  const removed = useLog((s) => s.removed)
   const clock = useNow(now)
   const today = useMemo(() => todaysSets(sets, clock), [sets, clock])
+  // Sets just removed keep their place, and their day, while Undo is on offer:
+  // the days shown come from both, and each day's sums count only what's left
+  const gone = useMemo(() => new Set(removed.map((set) => set.id)), [removed])
+  const left = (all: LoggedSet[]) => all.filter((set) => !gone.has(set.id))
+  const taken = (all: LoggedSet[]) => all.filter((set) => gone.has(set.id))
+  const removedToday = removed.filter((set) => dayKey(set.endedAt) === dayKey(clock))
   // Every other day goes under Earlier (picked by date, not by its label)
-  const earlier = useMemo(() => daysOf(sets).filter((day) => day.key !== dayKey(clock)), [sets, clock])
+  const earlier = useMemo(
+    () => daysOf([...sets, ...removed]).filter((day) => day.key !== dayKey(clock)),
+    [sets, removed, clock],
+  )
+
+  // Leaving the page: an open form closes unsaved, and what was removed stays removed
+  useEffect(
+    () => () => {
+      cancelEdit()
+      forgetRemoved()
+    },
+    [],
+  )
 
   return (
     <section className="page" aria-labelledby="today-title">
       <h2 id="today-title">Today</h2>
-      {today.length === 0 ? (
+      {today.length === 0 && removedToday.length === 0 ? (
         <p className="page-note">{EMPTY_TODAY}</p>
       ) : (
         <>
           <p className="page-note today-totals">{totalsText(totals(today))}</p>
-          <SetList sets={today} />
+          <SetList sets={today} removed={removedToday} />
         </>
       )}
 
@@ -109,23 +123,27 @@ export function TodayPage({ now }: { now?: number }) {
         <>
           <h3 className="earlier-title">Earlier</h3>
           <div className="day-list">
-            {earlier.map((day) => (
-              // A native open/close row: works with touch, keyboard and screen readers, no state to keep
-              <details key={day.key} className="day">
-                <summary>
-                  <strong>
-                    {dayLabel(day.key, clock)} · {totalsText({ count: day.sets.length, seconds: day.seconds })}
-                  </strong>
-                  <span>{daySummary(day.sets)}</span>
-                </summary>
-                <SetList sets={day.sets} />
-              </details>
-            ))}
+            {earlier.map((day) => {
+              const kept = left(day.sets)
+              return (
+                // A native open/close row: works with touch, keyboard and screen readers, no state to keep
+                <details key={day.key} className="day">
+                  <summary>
+                    <strong>
+                      {dayLabel(day.key, clock)} · {totalsText(totals(kept))}
+                    </strong>
+                    <span>{daySummary(kept)}</span>
+                  </summary>
+                  <SetList sets={kept} removed={taken(day.sets)} />
+                </details>
+              )
+            })}
           </div>
         </>
       )}
 
       <LogTools hasSets={sets.length > 0} />
+      <SetAnnouncer />
     </section>
   )
 }

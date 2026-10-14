@@ -101,7 +101,11 @@ async function openApp(sets: LoggedSet[] = [], browser = fakeBrowser()) {
 type App = Awaited<ReturnType<typeof openApp>>
 
 // The Exercises tab as it would show (React marks where pieces of text meet with <!-- -->)
-const show = (app: App) => renderToString(createElement(app.ExercisesPage, { now: NOW })).replaceAll('<!-- -->', '')
+// (a set row's text is drawn in parts that never break across lines; read here as plain text)
+const show = (app: App) =>
+  renderToString(createElement(app.ExercisesPage, { now: NOW }))
+    .replaceAll('<!-- -->', '')
+    .replace(/<span class="part">([^<]*)<\/span>/g, '$1')
 // Just the history page's part of it
 const historyPart = (html: string) => html.slice(html.indexOf('history-page'))
 // The list's row for one exercise

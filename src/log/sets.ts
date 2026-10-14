@@ -27,6 +27,15 @@ export const MIN_CARDIO_SECONDS = 10
 
 const cents = (value: number) => Math.round(value * 100) / 100
 
+// A cardio set's numbers for a length of time: the distance at the exercise's
+// speed, and the strokes on the rower. One place for the sums, so a set fixed
+// later (edit.ts) can't disagree with one saved as it finished.
+export function cardioNumbers(kind: ExerciseKind, seconds: number) {
+  const { speed = 0, strokes } = EXERCISES[kind]
+  const numbers = { seconds: cents(seconds), meters: cents(speed * seconds) }
+  return strokes ? { ...numbers, strokes: strokesSince(seconds) } : numbers
+}
+
 // The part of `activity` at its current pace, as a set finished at `now`
 // (exercise clock) and `endedAt` (time of day), or null if it doesn't count:
 // the person never reached the machine, or it's too short. After a change of
@@ -35,14 +44,11 @@ const cents = (value: number) => Math.round(value * 100) / 100
 export function finishedPart(activity: Activity, now: number, endedAt: number): NewSet | null {
   if (!activity.arrived) return null // still stepping on: it never started
   const { kind } = activity
-  const { speed, strokes } = EXERCISES[kind]
+  const { speed } = EXERCISES[kind]
   const seconds = Math.max(0, paceSeconds(activity, now))
   if (speed) {
     if (seconds < MIN_CARDIO_SECONDS) return null
-    const meters = cents(speed * seconds)
-    return strokes
-      ? { kind, endedAt, seconds: cents(seconds), meters, strokes: strokesSince(seconds) }
-      : { kind, endedAt, seconds: cents(seconds), meters }
+    return { kind, endedAt, ...cardioNumbers(kind, seconds) }
   }
   const reps = repsDone(activity, now)
   if (reps < MIN_REPS) return null

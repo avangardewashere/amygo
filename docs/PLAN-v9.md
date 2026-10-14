@@ -298,10 +298,11 @@ marks your heaviest set as Best.
 
 ### Block 3: Fix a set
 
-**What you'll see:** every saved set on the Today page (today's and under Earlier) has **Edit** beside Remove. Edit turns
-the row into a small form: reps and kg for strength, minutes and seconds for cardio, with **Save** and **Cancel**. Save
-updates the row, the day's totals and summary, and the exercise's History on the spot. Tap Remove and the row becomes
-"Removed · **Undo**" for six seconds (per D8), then goes.
+**What you'll see** (as built): every saved set, on the Today page (today's and under Earlier) and on an exercise's own
+page, has **Edit** beside Remove. Edit turns the row into a small form: reps and kg for strength, minutes and seconds
+for cardio, with **Save** and **Cancel**; the phone shows its number pad. Save is off while a number is wrong, and the
+reason appears under the fields once you pause typing. Save updates the row, the day's totals and summary, and the
+exercise's History on the spot. Tap Remove and the row becomes "Removed · **Undo**" for six seconds (per D8), then goes.
 
 **How:**
 - **`editSet(id, changes)`** in `logStore.ts` keeps `id`, `kind` and `endedAt` and replaces the numbers. For cardio the
@@ -333,6 +334,88 @@ updates; Remove a set, tap Undo, it's back where it was.
 
 **Summary:** A wrong set can be fixed in place, and a wrong Remove can be undone, so the log can be trusted without ever
 clearing it. That finishes v9.
+
+**Status: done** (built and committed 2026-10-14 on branch `v9-log-you-keep`). 165 tests passing (7 new: V9B3-T1..T7;
+four older ones updated, see below). **Built:** `src/log/edit.ts` (the rules: what the form starts with, which numbers
+are allowed and the reason when one isn't, the set with its new numbers; `checkEdit()` lives here rather than in
+`sets.ts`, which was getting long); `cardioNumbers()` in `sets.ts`, the one sum both a finished set and an edited one
+use; `src/log/editing.ts` (the one open form and what's typed in it); `removeSet`, `undoRemove`, `forgetRemoved` and
+`editSet` in `logStore.ts`; `src/shell/SetRows.tsx`, the rows the Today page and an exercise's page now share. Shell:
+17.3 → 19.6 KB (budget 60).
+
+**Changed from this plan, or added to it:**
+- **Edit and Undo are on an exercise's own page too.** It already had Remove; one without Undo beside one with it would
+  have been a trap.
+- **The limits:** reps 1 to 999 and a cardio time up to 24 hours (the plan gave only the lower ends; the upper ones catch
+  a slip of the thumb). A weight must be within the exercise's range but needn't sit on the picker's steps (12.5 kg
+  dumbbells exist), and can be emptied: the set then has no weight. A number left as it was is never refused, even one
+  outside today's limits, so its other number can still be fixed.
+- **The kg field asks for the decimal number pad** (the plan said `numeric` for every field; "62.5" needs the point), and
+  the keyboard's own key reads Next on every field but the last.
+- **The reason for a wrong number waits for a pause in typing** (or a refused Save). At every key it flashed for "6" on
+  the way to "62.5". Save is off at once either way.
+- **One form at a time.** Edit on another row while the open form holds a change (or a wrong number) leaves that form
+  open and brings it into view, to be saved or cancelled; it is neither thrown away nor saved half-typed. The form says
+  so under its fields ("Save or cancel this set first."), and the cursor goes to its wrong field if it has one.
+- **Remove and Undo ignore a second tap for 0.6 s.** They sit in the same spot, so a double-tap undid itself.
+- **Four older tests follow the new rows:** V7B1-T7 allows `SetRows.tsx` as the one more component the Today page uses;
+  V7B1-T5 and V7B3-T1 read a row's text as plain text (it is drawn in parts now); V9B1-T7 finds the Back up / Restore
+  result line by its class.
+
+**Kept as the plan says:** each removed row has its own six seconds, so when several are removed in a row the ones below
+shift as each runs out.
+
+**A review** (3 angles, one skeptic per finding; 20 findings, the 10 most serious checked): 8 held, all low, and the
+rest were read and acted on where they named something real:
+- **A double-tap on Undo removed the set again** (and one on Remove undid it): fixed with the pause above.
+- **Reasons flashed, and the form jumped, while typing an ordinary weight:** the pause above, and the reasons line keeps
+  its place.
+- **A cardio set's form could open a second above what its row shows** (the form rounded; the row's clock cuts off).
+  Both cut off now, so 299.6 s is 4:59 in both, and saving it unchanged leaves it exactly as it was.
+- **With two buttons the row's text broke badly** ("at" on one line, its time on the next). A row's text is drawn in
+  parts that each stay together when they fit.
+- **Screen readers:** a removal wasn't reliably read out (one line per page does it now: "Removed Bicep curls, 12 reps ·
+  10 kg. Undo for 6 seconds."); focus was lost when an Undo row ran out; two sets with the same numbers had the same
+  button names (they carry the time now).
+- **A set that came back while its Undo was on offer** (a backup holding it restored in those six seconds) showed as
+  removed; it is simply back now. **An open form closes if its set's numbers change underneath it** (another window).
+- Test gaps closed: four wrong Today pages that passed every test (today's only set removed, a removed set showing
+  under the wrong day, a day's summary still listing it); focus; one right number with one wrong; the 59-second edge.
+
+**A second check, of those fixes** (2 reviewers, one skeptic per finding): 10 of 12 held, one of them medium, and that
+one came from the first round's own fix:
+- **When an Undo row ran out, the page jumped to the top of the list** (the focus repair went to the list's first
+  button, and focusing scrolls). It goes to the row that took its place now, without moving the page.
+- **A long exercise name pushed Remove off the row** (unbreakable text was too blunt): a part now wraps inside itself
+  when it is wider than the line.
+- **"Edit on another row" had been made to save the open form first**, which saved numbers still being typed ("1" on
+  the way to "15"). Now that form stays open, as above.
+- **The same words twice were read out once** (two identical sets removed in a row); **every key typed redrew every
+  day's list** (it would have lagged with a long log; a list now follows only which row has the form); **two older
+  tests were passing for the wrong reason** (the buttons' spoken names repeat the row's text).
+
+**A last, narrow check, of the second round** (1 reviewer, one skeptic per finding): 2 of 3 held, both low and both in
+one place. When Edit on another row was refused, the reason was only read out, not shown, and the cursor went to the
+open form's first field even when another one was wrong. The form now says it on screen, and the cursor goes to the
+wrong field.
+
+**Red-checks:** 111 deliberate breaks against the final code, one at a time; every one made a test fail. (93 were run
+after the first round of fixes and 107 after the second; all were caught each time.)
+
+**Checked in the browser** (dev server, 360 px wide): a squat set edited from 5 × 60 kg to 6 × 72.5 kg, with "0 reps"
+and "10 kg" explained under the fields and Save off; a rowing set's time edited from 2:00 to 4:30, its distance and
+strokes worked out again; Escape closing the form and nothing else, on an exercise's page too; Remove leaving "Removed · Undo"
+in place, Undo putting the set back between its neighbours, and the row gone just after six seconds; a double-tap on
+either button ignored; "62.5" typed with no reason flashing and nothing moving; long exercise names staying inside the
+row at 360 and 320 px; a row removed far down a 20-set list, with the page staying put when its Undo ran out; Edit on
+another row while a form in a closed day held a change, which reopened that day and showed the form, with "Save or
+cancel this set first." under its fields.
+
+**Your phone check (optional):** on Today, tap Edit on a set: the number pad comes up; change its reps and weight, Save,
+and that exercise's History shows the new Best if it is one. Remove a set, tap Undo: it's back where it was.
+
+**v9 in one line:** the log can be backed up and restored into any browser, every strength set carries a weight in kg,
+and a wrong set can be fixed or a wrong Remove undone.
 
 ---
 

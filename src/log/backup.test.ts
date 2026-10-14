@@ -310,7 +310,7 @@ describe('Back up and restore', { timeout: 30_000 }, () => {
     expect(empty).toContain('>Restore</button>')
     expect(empty).toMatch(/<input[^>]*type="file"[^>]*accept=".json,application\/json"[^>]*hidden/)
     expect(empty).toContain('Saved in this browser only.')
-    expect(empty).toContain('role="status"')
+    expect(empty).toContain('<p class="log-tools-result" role="status"></p>')
     expect(empty).not.toContain('Back up</button>')
     expect(empty).not.toContain('Clear history')
 

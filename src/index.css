@@ -596,6 +596,79 @@ body,
   font-variant-numeric: tabular-nums;
 }
 
+/* A row's text breaks between its parts, not inside "at 14:05" or "0.50 km":
+   each part is a block of its own that moves to the next line whole. One wider
+   than the line (a long exercise name beside two buttons) still wraps inside. */
+.set-list .part {
+  display: inline-block;
+  font-size: inherit;
+  opacity: 1;
+}
+
+/* The text column gives way to the row's buttons, never the other way round */
+.set-list li > div:first-child {
+  min-width: 0;
+}
+
+/* A set just removed: its row stays for a few seconds, with Undo */
+.set-list li.is-removed strong {
+  opacity: 0.75;
+}
+
+/* A set being fixed: its numbers as fields, then Save and Cancel */
+.set-list li.is-editing {
+  display: block;
+}
+
+.set-list form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.edit-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.edit-field input {
+  width: 4.6em;
+  min-height: 40px;
+  padding: 0 8px;
+  border: 1px solid rgb(255 255 255 / 0.28);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.06);
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.edit-field input[aria-invalid='true'] {
+  border-color: #e4572e;
+}
+
+/* Why a field isn't right. Its line is always there (so nothing jumps when a
+   reason appears, and a screen reader hears it), empty when all is well. */
+.edit-why {
+  min-height: 1.35em;
+  margin: 0;
+  font-size: 0.85rem;
+  color: #ffb199;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 6px;
+}
+
 .earlier-title {
   margin: 24px 0 8px;
   font-size: 0.8rem;
