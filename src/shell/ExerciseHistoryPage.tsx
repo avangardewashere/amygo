@@ -7,7 +7,6 @@ import { cancelEdit } from '../log/editing'
 import { forgetRemoved, useLog } from '../log/logStore'
 import { emptyHistory, finishedAt, setDay, setLength, setNumbers } from '../log/logText'
 import { bestSet, setsOf } from '../log/sets'
-import { NowDoing } from './NowDoing'
 import { SetAnnouncer, SetRows } from './SetRows'
 import { TargetChip, TargetEditor } from './TargetPicker'
 import { WeightStepper } from './WeightStepper'
@@ -57,7 +56,6 @@ export function ExerciseHistoryPage({ kind, now }: { kind: ExerciseKind; now?: n
         {MACHINE_NAMES[machine]}
         {!available && ' · Not in your gym'}
       </p>
-      <NowDoing />
       {holding && <p className="page-note">Put the dumbbell down first (on Home) to start an exercise.</p>}
       {!doing && (
         <div className="history-start-row">

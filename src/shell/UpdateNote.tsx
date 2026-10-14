@@ -3,10 +3,11 @@ import { applyUpdate, useUpdateReady } from '../offline/register'
 import { APP_NAME } from './brand'
 
 // "A new version of Amygo is ready · Reload", above the tabs. Never during an
-// exercise (a reload loses the set in progress), and Amygo never reloads by itself.
+// exercise or between its sets (a reload loses the set, and the round, in
+// progress), and Amygo never reloads by itself.
 export function UpdateNote() {
   const ready = useUpdateReady()
-  const busy = useGym((s) => s.activity !== null)
+  const busy = useGym((s) => s.activity !== null || s.between !== null)
   if (!ready || busy) return null
   return (
     <div className="update-note" role="status">

@@ -204,10 +204,11 @@ describe('Rest between sets', { timeout: 30_000 }, () => {
     pass(0.3)
     expect(app.gym.swapSettled()).toBe(false) // (the change of pace swapped the buttons: Run became Walk)
     app.gym.finishExercise()
-    const sources = import.meta.glob(['/src/shell/NowDoing.tsx', '/src/interaction/ActivityBubble.tsx'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>
+    // (Block 3: the workout card has one Finish for every card; the popup one for a set and one after it)
+    const sources = import.meta.glob(['/src/shell/WorkoutCard.tsx', '/src/interaction/ActivityBubble.tsx'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>
     for (const [file, source] of Object.entries(sources)) {
       expect(source, file).toMatch(/onClick=\{\(\) => swapSettled\(\) && action\.run\(\)\}/)
-      expect(source.match(/onClick=\{\(\) => tapFinish\(\)\}/g)?.length, file).toBe(2)
+      expect(source.match(/onClick=\{\(\) => tapFinish\(\)\}/g)?.length, file).toBe(file.includes('WorkoutCard') ? 1 : 2)
     }
 
     // +30 s when the rest's end has passed (its timer held up): 30 s from now
@@ -331,8 +332,8 @@ describe('Rest between sets', { timeout: 30_000 }, () => {
     pass(10)
     sleep(40)
     expect(app.text.betweenText(rest, performance.now())).toBe('Rest · 0:40 · set 2 of 3 next')
-    const { NowDoing } = await import('../shell/NowDoing')
-    expect(text(renderToString(createElement(NowDoing)))).toContain('Rest · 0:40 · set 2 of 3 next')
+    const { WorkoutCard } = await import('../shell/WorkoutCard')
+    expect(text(renderToString(createElement(WorkoutCard)))).toContain('squat · set 2 of 3 next 20 kg Rest 0:40')
 
     // The held-up timer still starts set 2 when it goes off: late, but not lost, and from then
     expect(doing(app)).toBeNull()
@@ -344,13 +345,13 @@ describe('Rest between sets', { timeout: 30_000 }, () => {
     // The app switches the rest's timer on: startApp(), which main.tsx calls
     const startup = (import.meta.glob('/src/shell/startup.ts', { query: '?raw', import: 'default', eager: true }) as Record<string, string>)['/src/shell/startup.ts']
     expect(startup).toMatch(/const stopRounds = startRounds\(\)[\s\S]*stopRounds\(\)/)
-    // The card and the header count down every half second; the popup every quarter
-    const sources = import.meta.glob(['/src/shell/NowDoing.tsx', '/src/shell/Header.tsx', '/src/interaction/ActivityBubble.tsx'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>
-    expect(sources['/src/shell/NowDoing.tsx']).toMatch(/useTicking\(activity !== null \|\| resting, 500\)/)
-    expect(sources['/src/shell/Header.tsx']).toMatch(/useTicking\(activity !== null \|\| resting, 500\)/)
+    // The card and the strip count down every half second; the popup every quarter
+    const sources = import.meta.glob(['/src/shell/WorkoutCard.tsx', '/src/interaction/ActivityBubble.tsx'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>
+    expect(sources['/src/shell/WorkoutCard.tsx']).toMatch(/useTicking\(activity !== null \|\| resting, 500\)/)
     expect(sources['/src/interaction/ActivityBubble.tsx']).toMatch(/useTicking\(resting, 250\)/)
     // A status line that changed every second would be read out every second: the ticking part is hidden from screen readers
-    expect(sources['/src/shell/NowDoing.tsx']).toMatch(/<span aria-hidden="true">\{betweenText\(between, now\)\}<\/span>\s*<span className="visually-hidden">\{betweenWords\(between\)\}<\/span>/)
+    expect(sources['/src/shell/WorkoutCard.tsx']).toMatch(/<p className="workout-count" aria-hidden="true">\s*\{words\.count\}\s*<\/p>/)
+    expect(sources['/src/shell/WorkoutCard.tsx']).toMatch(/<p className="visually-hidden" role="status">\s*\{words \?\? ''\}\s*<\/p>/)
     expect(app.text.betweenWords(rest)).toBe('Resting 1:30 before set 2 of 3')
     // (a display whose clock last ticked before the rest began shows the rest's full length, not 1:31)
     expect(app.text.betweenText(rest, rest.since - 400)).toBe('Rest · 1:30 · set 2 of 3 next')

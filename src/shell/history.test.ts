@@ -334,8 +334,8 @@ describe('History by exercise', () => {
       expect(same(viaPage), kind).toEqual(same(viaList))
     }
 
-    // While doing it, the page shows the live card with Finish instead of Start,
-    // and the finished set appears on the page
+    // While doing it, the page has no Start (the strip above the tabs shows what's going on,
+    // since v10 Block 3), and the finished set appears on the page
     let t = 1000
     vi.spyOn(performance, 'now').mockImplementation(() => t)
     vi.spyOn(Date, 'now').mockImplementation(() => NOW)
@@ -346,7 +346,6 @@ describe('History by exercise', () => {
     app.gym.startFromList('curl')
     t += 12 * 2.4 * 1000 + 100
     let page = historyPart(show(app))
-    expect(page).toContain('>Finish<')
     expect(page).not.toContain('>Start<')
     app.gym.finishFromList()
     page = historyPart(show(app))

@@ -27,6 +27,7 @@ import { furnitureObstacles, getBuild } from '../build/buildStore'
 import { propObstacles } from '../props/propLayout'
 import { BODY_RADIUS, blocked, closestInReach } from './reach'
 import { watchWalkingAway } from './walkAway'
+import { useTouchScreen } from '../shell/touchScreen'
 
 const WALK_SPEED = 3 // meters per second
 const TURN_SPEED = 12 // how quickly the person turns to face where they walk
@@ -88,6 +89,8 @@ export function Player() {
   const holding = useGym((s) => s.holding)
   const activity = useGym((s) => s.activity)
   const between = useGym((s) => s.between)
+  // With a mouse, the popup over the person; on a phone, the workout card (see App)
+  const popup = !useTouchScreen()
   // Resting between two sets of a round (not after its last): the resting pose
   const resting = !activity && between !== null && between.until !== null
 
@@ -184,7 +187,7 @@ export function Player() {
         <Body gait={gait} hands={handsFor(holding, activity)} activity={activity} resting={resting} />
       </Suspense>
       {holding && <HeldDumbbellMenu />}
-      {activity && (
+      {popup && activity && (
         <Html position={[0, 2.05, 0]} zIndexRange={[20, 0]}>
           <div className="item-anchor">
             <ActivityBubble activity={activity} />
@@ -192,7 +195,7 @@ export function Player() {
         </Html>
       )}
       {/* Between two sets of a round: Next set or Finish */}
-      {!activity && between && (
+      {popup && !activity && between && (
         <Html position={[0, 2.05, 0]} zIndexRange={[20, 0]}>
           <div className="item-anchor">
             <BetweenBubble between={between} />

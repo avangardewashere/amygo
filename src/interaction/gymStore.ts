@@ -523,7 +523,12 @@ function nearFurnitureType() {
 }
 
 // Keyboard: E opens/closes a menu, 1–9 picks an action, Esc closes or stops
-// (Stop: the set and its round, as Finish).
+// (Stop: the set and its round, as Finish), Space moves on (decision V10-D3):
+// Done during a set, Skip during the rest. Space's meaning changes with the card,
+// so a press just after it changed waits, as a tap does (Esc always works).
+// Space in a field, or on a button or link the keyboard took you to, is theirs;
+// on a button a mouse click merely left the cursor on (the Gym tab, +30 s), it's
+// the gym's, and that button lets go of the cursor.
 export function listenToInteractionKeys() {
   const onDown = (e: KeyboardEvent) => {
     if (e.repeat || getBuild().mode === 'build') return // items can't be used while building
@@ -534,6 +539,15 @@ export function listenToInteractionKeys() {
     } else if (e.code === 'Escape') {
       if (state.menu) closeMenu()
       else finishExercise()
+    } else if (e.code === 'Space') {
+      const target = e.target as Element | null
+      if (target?.closest?.('input, select, textarea, [contenteditable]')) return
+      const control = target?.closest?.('button, a') as HTMLElement | null | undefined
+      if (control?.matches?.(':focus-visible')) return
+      e.preventDefault() // (not a scroll, and not the button's press)
+      control?.blur?.()
+      if (state.activity) tapDone()
+      else if (state.between?.until != null) tapNextSet()
     } else if (/^Digit[1-9]$/.test(e.code)) {
       const pick = Number(e.code.slice(5)) - 1
       // With a menu open, numbers pick from it; mid-exercise, they pick a new pace

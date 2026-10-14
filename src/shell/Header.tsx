@@ -1,6 +1,3 @@
-import { EXERCISES, useGym } from '../interaction/gymStore'
-import { useTicking } from '../lib/ticking'
-import { betweenText, headline, progressText } from '../interaction/activityText'
 import { useBuild } from '../build/buildStore'
 import { ROOM } from '../scene/dimensions'
 import { APP_NAME } from './brand'
@@ -8,31 +5,9 @@ import { installApp, useInstallChoice } from './install'
 import { useTab } from './tabStore'
 import { WELCOME_BUTTON_ID, openWelcome } from './tabs'
 
-// While exercising: "Doing bicep curls · 10 kg · 7 of 12 reps", kept up to date;
-// resting: "Bicep curls · Rest · 1:12 · set 2 of 3 next"; after a round's last
-// set: "Bicep curls · 3 sets done"
-function Doing() {
-  const activity = useGym((s) => s.activity)
-  const between = useGym((s) => s.between)
-  const resting = !activity && between !== null && between.until !== null
-  const now = useTicking(activity !== null || resting, 500)
-  if (!activity && between) {
-    return (
-      <p className="shell-doing">
-        {EXERCISES[between.kind].name} · {betweenText(between, now)}
-      </p>
-    )
-  }
-  if (!activity) return null
-  return (
-    <p className="shell-doing">
-      {headline(activity)} · {progressText(activity, now)}
-    </p>
-  )
-}
-
-// The bar across the top: the app's name, what the person is doing, and (on
-// Home) how to play, with a "?" that brings back the welcome card
+// The bar across the top: the app's name, and (on Home) how to play, with a
+// "?" that brings back the welcome card. (What the person is doing shows on the
+// workout card, the strip, or the popup over the person: see WorkoutCard.tsx.)
 export function Header() {
   const home = useTab() === 'home'
   const building = useBuild((s) => s.mode === 'build')
@@ -60,7 +35,6 @@ export function Header() {
           </button>
         )}
       </div>
-      <Doing />
       {home &&
         (building ? (
           <>

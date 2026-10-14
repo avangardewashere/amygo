@@ -76,16 +76,6 @@ body,
   font-size: clamp(0.78rem, 2.4vw, 0.9rem);
 }
 
-.shell-doing {
-  overflow: hidden;
-  color: #e4572e;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  /* One line, so the gym below doesn't jump as the count grows (the popup and the card show it all) */
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .shell-header .hint {
   opacity: 0.55;
 }
@@ -174,7 +164,9 @@ body,
 .joystick {
   position: absolute;
   left: max(24px, env(safe-area-inset-left));
-  bottom: max(24px, env(safe-area-inset-bottom));
+  /* Above the workout card while it's shown (its height, set by cardHeight.ts),
+     but never out of the gym's area (a phone on its side) */
+  bottom: min(calc(max(24px, env(safe-area-inset-bottom)) + var(--workout-card, 0px)), calc(100% - 128px));
   width: 120px;
   height: 120px;
   border-radius: 50%;
@@ -1119,6 +1111,122 @@ body,
 
 .welcome-actions .list-button {
   flex: 1 1 140px;
+}
+
+/* ---------- The workout card (on the gym, phones) and strip (other tabs) ---------- */
+
+.workout-card {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Over the gym's floating labels (they stack up to 20), under the pages (25) */
+  z-index: 22;
+  padding: 12px max(16px, env(safe-area-inset-right)) 14px max(16px, env(safe-area-inset-left));
+  border-top: 1px solid rgb(228 87 46 / 0.6);
+  background: rgb(20 21 24 / 0.96);
+  box-shadow: 0 -8px 24px rgb(0 0 0 / 0.3);
+}
+
+/* Every line on one line, and one row of buttons sharing the width: the card is
+   the same height for a set, a rest and the end (the joystick sits on it) */
+.workout-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workout-card-top strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workout-card-top span {
+  flex: none;
+  font-weight: 600;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}
+
+.workout-count {
+  margin: 2px 0 10px;
+  overflow: hidden;
+  color: #e4572e;
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums; /* digits keep the same width as the count changes */
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workout-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.workout-actions .list-button {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A phone on its side: the card on the right, smaller, clear of the joystick
+   (which stays in its corner) and of most of the gym */
+@media (orientation: landscape) and (max-height: 520px) {
+  .workout-card {
+    left: auto;
+    width: min(400px, 58%);
+    padding-top: 8px;
+    padding-bottom: 10px;
+    border-left: 1px solid rgb(228 87 46 / 0.6);
+    border-top-left-radius: 14px;
+  }
+
+  .workout-count {
+    margin: 0 0 6px;
+    font-size: 1.25rem;
+  }
+
+  .joystick {
+    bottom: max(24px, env(safe-area-inset-bottom));
+  }
+}
+
+.workout-strip {
+  flex: none;
+  display: flex;
+  gap: 0.3em;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  padding: 10px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
+  border: 0;
+  border-top: 1px solid rgb(228 87 46 / 0.5);
+  background: rgb(228 87 46 / 0.12);
+  color: #e4572e;
+  font: inherit;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* The name gives way (cut short), never the count */
+.strip-what {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.strip-count {
+  flex: none;
 }
 
 /* ---------- Update note (above the tabs) ---------- */

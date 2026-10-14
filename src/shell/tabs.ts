@@ -5,7 +5,7 @@ import { endDrag, getBuild, toggleBuildMode } from '../build/buildStore'
 import { EXERCISES, type ExerciseKind } from '../exercises/catalog'
 import { input, releaseKeys } from '../player/input'
 import { rememberWelcomed } from './firstVisit'
-import { getHistoryKind, getTab, getWelcome, setHistoryKind, setTab, setWelcome, type Tab } from './tabStore'
+import { getHistoryKind, getTab, getWelcome, setHistoryKind, setRowToShow, setTab, setWelcome, type Tab } from './tabStore'
 
 // The gym goes out of reach (another page, or the welcome card over it): finish
 // any drag (a piece dropped somewhere taken snaps back), leave build mode, and
@@ -25,6 +25,13 @@ export function openTab(tab: Tab) {
   closeWelcome({ returnFocus: false }) // and so does the welcome (that counts as seen)
   if (tab !== 'home') letGoOfTheGym()
   setTab(tab)
+}
+
+// The workout card's Change: the Exercises list, with this exercise's row in
+// view (the set or the rest carries on meanwhile)
+export function showInList(kind: ExerciseKind) {
+  openTab('exercises')
+  setRowToShow(kind)
 }
 
 // ---------- The welcome card ----------

@@ -58,13 +58,15 @@ const doing = (app: App) => app.gym.getGym().activity
 
 // Pages as they'd show, as plain text
 const text = (html: string) => html.replace(/<!-- -->/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+// (Block 3: the workout card on the gym, and the strip on the other tabs, took over
+// from the Exercises page's card and the header's line)
 async function nowCard() {
-  const { NowDoing } = await import('../shell/NowDoing')
-  return text(renderToString(createElement(NowDoing)))
+  const { WorkoutCard } = await import('../shell/WorkoutCard')
+  return text(renderToString(createElement(WorkoutCard)))
 }
-async function header() {
-  const { Header } = await import('../shell/Header')
-  return text(renderToString(createElement(Header)))
+async function strip() {
+  const { WorkoutStrip } = await import('../shell/WorkoutCard')
+  return text(renderToString(createElement(WorkoutStrip)))
 }
 
 describe('A set with a target', { timeout: 30_000 }, () => {
@@ -216,12 +218,14 @@ describe('A set with a target', { timeout: 30_000 }, () => {
     app.weights.setKg('curl', 10)
     app.gym.startFromList('curl')
     const cameFrom = doing(app)!.returnTo
-    expect(await nowCard()).toBe('Doing bicep curls · 10 kg Set 1 of 3 · 0 of 12 reps Done Finish')
-    expect(await header()).toContain('Doing bicep curls · 10 kg · Set 1 of 3 · 0 of 12 reps')
-    // In the gym's popup: Done for this set, and Finish (Esc) for the round
+    expect(await nowCard()).toBe('Bicep curls, set 1 of 3, 12 reps, 10 kg Bicep curls · set 1 of 3 10 kg 0 / 12 reps Done Change Finish')
+    expect(await strip()).toBe(
+      'Bicep curls, set 1 of 3, 12 reps, 10 kg Bicep curls · set 1 of 3 · 0 / 12 reps Bicep curls, set 1 of 3, 12 reps, 10 kg. Open the gym',
+    )
+    // In the gym's popup: Done for this set (Space), and Finish (Esc) for the round
     const { BetweenBubble, ActivityBubble } = await import('../interaction/ActivityBubble')
     expect(text(renderToString(createElement(ActivityBubble, { activity: doing(app)! })))).toBe(
-      'Doing bicep curls · 10 kg Set 1 of 3 · 0 of 12 reps Done Finish Esc',
+      'Doing bicep curls · 10 kg Set 1 of 3 · 0 of 12 reps Done Space Finish Esc',
     )
     pass(12 * REP + 0.1)
 
@@ -229,10 +233,14 @@ describe('A set with a target', { timeout: 30_000 }, () => {
     // (Block 2: it rests, "Rest · 1:30 · set 2 of 3 next", with +30 s, Skip and Finish)
     expect(saved(app)).toHaveLength(1)
     expect(app.gym.getGym().between).toMatchObject({ kind: 'curl', set: 1, target: { sets: 3, reps: 12 } })
-    expect(await nowCard()).toBe('Bicep curls Rest · 1:30 · set 2 of 3 next Resting 1:30 before set 2 of 3 +30 s Skip Finish')
-    expect(await header()).toContain('Bicep curls · Rest · 1:30 · set 2 of 3 next')
+    expect(await nowCard()).toBe(
+      'Bicep curls, Resting 1:30 before set 2 of 3 Bicep curls · set 2 of 3 next 10 kg Rest 1:30 +30 s Skip Change Finish',
+    )
+    expect(await strip()).toBe(
+      'Bicep curls, Resting 1:30 before set 2 of 3 Bicep curls · set 2 of 3 next · Rest 1:30 Bicep curls, Resting 1:30 before set 2 of 3. Open the gym',
+    )
     expect(text(renderToString(createElement(BetweenBubble, { between: app.gym.getGym().between! })))).toBe(
-      'Bicep curls Rest · 1:30 · set 2 of 3 next Resting 1:30 before set 2 of 3 +30 s Skip Finish Esc',
+      'Bicep curls Rest · 1:30 · set 2 of 3 next Resting 1:30 before set 2 of 3 +30 s Skip Space Finish Esc',
     )
 
     // The round keeps its target: a change now is for the next round
@@ -246,11 +254,11 @@ describe('A set with a target', { timeout: 30_000 }, () => {
     pass(12 * REP + 0.1)
     expect(app.gym.getGym().between).toMatchObject({ set: 2 })
     app.gym.nextSet()
-    // The last set: Done is all there is, and it takes Esc
+    // The last set (Block 3: Done and Finish on every set; Done leads to "3 sets done", Finish doesn't)
     expect(text(renderToString(createElement(ActivityBubble, { activity: doing(app)! })))).toBe(
-      'Doing bicep curls · 12 kg Set 3 of 3 · 0 of 12 reps Done Esc',
+      'Doing bicep curls · 12 kg Set 3 of 3 · 0 of 12 reps Done Space Finish Esc',
     )
-    expect(await nowCard()).toBe('Doing bicep curls · 12 kg Set 3 of 3 · 0 of 12 reps Finish')
+    expect(await nowCard()).toBe('Bicep curls, set 3 of 3, 12 reps, 12 kg Bicep curls · set 3 of 3 12 kg 0 / 12 reps Done Change Finish')
     pass(12 * REP + 0.1)
     expect(doing(app)).toBeNull()
     // After the last set there's no rest (Block 2: "3 sets done", with Again and Finish)
@@ -260,9 +268,10 @@ describe('A set with a target', { timeout: 30_000 }, () => {
       [12, 12],
       [12, 12],
     ])
-    expect(await nowCard()).toBe('Bicep curls 3 sets done 3 sets done Again Finish')
+    expect(await nowCard()).toBe('Bicep curls, 3 sets done Bicep curls 3 sets done Again Change Finish')
     app.gym.finishFromList()
-    expect(await nowCard()).toBe('')
+    expect(await nowCard()).toBe('') // (only the screen reader's line, empty)
+    expect(await strip()).toBe('')
 
     // Finish between sets ends the round; Finish (or Esc, or Stop) mid-set ends it with no next set
     app.gym.startFromList('curl')
@@ -370,12 +379,12 @@ describe('A set with a target', { timeout: 30_000 }, () => {
     switchMode()
 
     // The buttons do what they say (they can't be clicked without a browser, so read what they call)
-    const sources = import.meta.glob(['/src/shell/NowDoing.tsx', '/src/interaction/ActivityBubble.tsx', '/src/interaction/gymStore.ts'], {
+    const sources = import.meta.glob(['/src/shell/WorkoutCard.tsx', '/src/interaction/ActivityBubble.tsx', '/src/interaction/gymStore.ts'], {
       query: '?raw',
       import: 'default',
       eager: true,
     }) as Record<string, string>
-    const card = sources['/src/shell/NowDoing.tsx']
+    const card = sources['/src/shell/WorkoutCard.tsx'] // (Block 3: the workout card)
     // (Block 2: Skip and +30 s while resting; Again after the last set)
     expect(card).toMatch(/key="skip" [^>]*data-next onClick=\{\(\) => tapNextSet\(\)\}>\s*Skip/)
     expect(card).toMatch(/key="more" [^>]*onClick=\{\(\) => tapMoreRest\(\)\}>\s*\+30 s/)
@@ -383,18 +392,16 @@ describe('A set with a target', { timeout: 30_000 }, () => {
     // (Block 2: Finish waits out the swap pause too, as Skip moves to where it appears)
     expect(card).toMatch(/key="finish" [^>]*onClick=\{\(\) => tapFinish\(\)\}>\s*Finish/)
     expect(card).toMatch(/key="done" [^>]*data-next onClick=\{\(\) => tapDone\(\)\}>\s*Done/)
-    expect(card).toMatch(/key="finish"\s*type="button"\s*className="list-button is-primary"\s*data-next=\{!moreToCome \|\| undefined\}\s*onClick=\{\(\) => tapFinish\(\)\}/)
-    // The card changes under the cursor (Done, Next set, a set ending by itself): if the button
-    // with the cursor went, the cursor goes on to the new card's next step, or to the page's title
+    expect(card).toMatch(/key="change" [^>]*onClick=\{\(\) => swapSettled\(\) && showInList\(kind\)\}>\s*Change/)
+    // The card changes under the cursor (Done, Skip, a set or a rest ending by itself): if the button
+    // with the cursor went, the cursor goes on to the new card's next step, or to the tab bar's Gym tab
     // (where the cursor is: noticed as it moves, and after every redraw, before which the card's change is checked)
     expect(card).toMatch(/const notice = \(target: Node \| null\) => \{\s*cursorOnCard\.current = actions\.current\?\.contains\(target\) \?\? false/)
     expect(card).toMatch(/const onFocus = \(event: FocusEvent\) => notice\(event\.target as Node\)\s*document\.addEventListener\('focusin', onFocus\)/)
     expect(card).toMatch(
-      /useLayoutEffect\(\(\) => \{\s*if \(card !== shown\.current\) \{\s*shown\.current = card\s*if \(cursorOnCard\.current && !actions\.current\?\.contains\(document\.activeElement\)\) \{\s*const next = actions\.current\?\.querySelector<HTMLButtonElement>\('\[data-next\]'\) \?\? page\.current\?\.querySelector\('h2'\)\s*next\?\.focus\(\)\s*\}\s*\}\s*notice\(document\.activeElement\)/,
+      /const which = useGym\(cardKey\)[\s\S]*?useLayoutEffect\(\(\) => \{\s*if \(which !== before\.current\) \{\s*before\.current = which\s*if \(cursorOnCard\.current && !actions\.current\?\.contains\(document\.activeElement\)\) \{\s*const next =\s*actions\.current\?\.querySelector<HTMLButtonElement>\('\[data-next\]'\) \?\?\s*document\.querySelector<HTMLButtonElement>\('\.tabbar-tab\[aria-current="page"\]'\)\s*next\?\.focus\(\)\s*\}\s*\}\s*notice\(document\.activeElement\)/,
     )
-    const pages = import.meta.glob(['/src/shell/ExercisesPage.tsx', '/src/shell/ExerciseHistoryPage.tsx', '/src/App.tsx'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>
-    expect(pages['/src/shell/ExercisesPage.tsx']).toMatch(/<h2 id="exercises-title" tabIndex=\{-1\}>/)
-    expect(pages['/src/shell/ExerciseHistoryPage.tsx']).toMatch(/<h2 id="history-title" ref=\{title\} tabIndex=\{-1\}>/)
+    const pages = import.meta.glob(['/src/App.tsx'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>
     // The gym, its popups included, is out of reach while another tab covers it
     expect(pages['/src/App.tsx']).toMatch(/<div className="gym-layer" inert=\{welcome \|\| !home\}>/)
     // On a phone the popup's buttons go under its words, and the header line stays one line
@@ -404,7 +411,10 @@ describe('A set with a target', { timeout: 30_000 }, () => {
       /@media \(max-width: 480px\) \{\n  \.activity-bubble \{\n    flex-direction: column;\n    align-items: flex-start;\n    gap: 8px;\n    width: max-content;\n    max-width: calc\(100vw - 24px\);\n  \}\n\n  \.bubble-actions \{\n    display: flex;\n    flex-wrap: wrap;/,
     )
     expect(sources['/src/interaction/ActivityBubble.tsx'].match(/<div className="bubble-actions">/g)).toHaveLength(2)
-    expect(css).toMatch(/\.shell-doing \{\n  overflow: hidden;[\s\S]*?text-overflow: ellipsis;\n  white-space: nowrap;\n\}/)
+    // (Block 3: the header's line is gone; the strip on the other tabs is one line, cut short if need be)
+    expect(css).toMatch(/\n\.workout-strip \{[^}]*white-space: nowrap;/)
+    expect(css).toMatch(/\n\.strip-what \{[^}]*text-overflow: ellipsis;/)
+    expect(css).not.toContain('.shell-doing')
     expect(sources['/src/interaction/ActivityBubble.tsx']).toMatch(/onClick=\{\(\) => tapNextSet\(\)\}>\s*Skip/)
     expect(sources['/src/interaction/ActivityBubble.tsx']).toMatch(/onClick=\{\(\) => tapMoreRest\(\)\}>\s*\+30 s/)
     expect(sources['/src/interaction/ActivityBubble.tsx']).toMatch(/onClick=\{\(\) => tapAgain\(\)\}>\s*Again/)

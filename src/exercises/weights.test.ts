@@ -534,7 +534,9 @@ describe('Weights in kg', { timeout: 30_000 }, () => {
     // While that exercise is being done, the page has no picker (the set keeps the weight it started with)
     app.gym.startFromList('squat')
     expect(history('squat')).not.toContain('weight-stepper')
-    expect(history('squat')).toContain('Doing back squats · 62.5 kg')
+    // (and what's going on shows in the strip above the tabs, since v10 Block 3: see workoutCard.test.ts)
+    const { cardWords } = await import('../interaction/activityText')
+    expect(cardWords(app.gym.getGym(), performance.now())?.extra).toBe('62.5 kg')
     app.gym.stopExercise()
   })
 

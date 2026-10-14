@@ -9,6 +9,8 @@ import { TabBar } from './shell/TabBar'
 import { ExercisesPage } from './shell/ExercisesPage'
 import { TodayPage } from './shell/TodayPage'
 import { useTab, useWelcome } from './shell/tabStore'
+import { useTouchScreen } from './shell/touchScreen'
+import { WorkoutCard, WorkoutStrip } from './shell/WorkoutCard'
 import { Welcome } from './shell/Welcome'
 import { UpdateNote } from './shell/UpdateNote'
 import { gymArrived } from './offline/register'
@@ -35,6 +37,7 @@ export default function App() {
   const home = tab === 'home'
   const building = useBuild((s) => s.mode === 'build')
   const welcome = useWelcome()
+  const touch = useTouchScreen()
 
   return (
     <main className="app">
@@ -48,12 +51,16 @@ export default function App() {
           </Suspense>
           {home && !building && !welcome && <Joystick />}
           {home && !welcome && <BuildBar />}
+          {/* On a phone, the workout under your thumb (a mouse gets the popup over the person) */}
+          {home && !welcome && touch && <WorkoutCard />}
         </div>
         {home && <Welcome />}
         {tab === 'exercises' && <ExercisesPage />}
         {tab === 'today' && <TodayPage />}
         {SHOW_PERF && <PerfReadout />}
       </div>
+      {/* On the other tabs, the workout in one line: tap it for the gym */}
+      {!home && <WorkoutStrip />}
       <UpdateNote />
       <TabBar />
     </main>

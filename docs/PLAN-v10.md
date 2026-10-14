@@ -345,6 +345,75 @@ the card; on the desktop the popup is as before. The shell stays under budget (e
 **Summary:** A workout card under your thumb on the Gym tab, and a strip of it on every other tab, so a whole workout can
 be run without leaving the gym. That finishes v10.
 
+**Status: done** (built and committed 2026-10-15 on branch `v10-train-with-partner`). 186 tests passing (6 new:
+V10B3-T1..T6; six older ones updated, see below). **Built:** `src/shell/WorkoutCard.tsx` (the card, and the strip as
+its other form), `src/shell/touchScreen.ts` (is the main pointer a finger?), `src/shell/cardHeight.ts` (the card's
+height for the joystick), `src/shell/rowInView.ts` (Change's row), the card's words (`cardWords`, `stripText`,
+`cardKey`) from the popup's own measure in `activityText.ts`, Space in the gym's keys. `NowDoing.tsx` and the header's
+"Doing…" line are gone. Shell: 23.4 → 24.3 KB (budget 60; the plan's guess of "under 20" was made before Blocks 1–2
+came out bigger).
+
+**Changed from this plan, or added to it:**
+- **A phone is a finger, not a width:** the card shows where the main pointer is a finger, `(pointer: coarse)`, the
+  same test the joystick has always used; with a mouse the popup stays, on any width.
+- **Done and Finish are on every set's card** (and in the popup). Since Block 2, Done after the last set leads to "3
+  sets done" (with Again) and Finish doesn't, so on the last set they differ. Change is on every card.
+- **The strip shows on the other tabs with a mouse too**, since the header's line is gone everywhere.
+- **Change brings the row to the middle of the list** and puts the cursor on its History button; the set or the rest
+  carries on.
+- **A phone on its side** gets a smaller card on the right of the gym, and the joystick stays in its corner. Everywhere
+  else the joystick is lifted by the card's height, but never out of the gym's area.
+- **The card is the same height whatever it shows** (one line for each line, one row of buttons sharing the width), so
+  the joystick doesn't move under the thumb when a set gives way to the rest.
+- **The update note ("A new version… Reload") waits while a round is on**, rest included: a reload loses the round.
+- **Six older tests follow the new card:** V10B1-T7 and V10B2-T6 read the card and the strip where they read the old
+  card and the header's line; V10B2-T2 counts one Finish on the card; V7B3-T5 and V9B2-T7 no longer find the card on an
+  exercise's page (the strip shows it, above the tabs); V10B1-T7's last set has both Done and Finish.
+
+**A review** (3 angles, one skeptic per finding; 21 findings): 19 held, several the same thing seen twice, all fixed:
+- **Space didn't work after a mouse click** on a button (the Gym tab, +30 s, the "?"), which kept it: it did nothing,
+  added 30 s, or opened the welcome card. A button a click merely left the cursor on gives Space up now (and lets go of
+  the cursor); a field, or a button the keyboard took you to, keeps it.
+- **Space had no pause** though its meaning changes (Done, then Skip): pressed as the rest ran out, it ended the new set
+  with no rep and lost the round. It waits out the 0.6 s now, as a tap does. (Esc, which always means the same, doesn't.)
+- **Change had no pause**, and takes Skip's and Finish's places from one card to the next: a double tap on Skip could
+  open the list. It waits now, as every other button does.
+- **The strip cut off the count** (the part that changes) for longer names on a 360 px phone: the name gives way now.
+- **A phone on its side:** the card covered the gym and lifted the joystick over the header (above).
+- **Screen readers:** nothing was said on the other tabs as a set ended or a rest began (the old card had said it); the
+  strip now has the card's status line beside it, kept there even when empty so the first words are heard. Tapping the
+  strip lost the cursor (it goes to the card's next step now); a change of pace lost it too (pace buttons keep their
+  place now).
+- **The card grew between a set and a rest,** which jumped the joystick under the thumb (above).
+- **Tests that couldn't fail:** the joystick's lift, Change's row, the status line's place, the cursor's rule and Space
+  on a button were checked only by reading the code; they're checked by running it now (`cardHeight.ts`,
+  `rowInView.ts`, `cardKey`, and stand-ins for a focused field or button).
+
+Two were turned down: the popup over the person can't be seen by the "exactly once" test (it's drawn by the 3D scene,
+which the tests don't draw), and the update note's check reads the code where a running check was possible (it's
+one plain line).
+
+**Red-checks:** 64 deliberate breaks, one at a time; every one made a test fail. (The first run caught 62: a check was
+added for the two it missed, the card never counting past its target, in reps and in a cardio set's minutes.)
+
+**Visual check:** done on the laptop, in the browser pane set to a phone (a finger as the main pointer):
+- At 375 × 812 and 360 × 740: the card across the bottom of the gym, with the joystick lifted onto it and back down when
+  the card went.
+- The card is the same height for a set and a rest; four buttons fit one row at 360 px.
+- Change opened Exercises with the curls row and then the squat row in view (the list scrolled to the squat row, the
+  cursor on its History button).
+- The strip on the other tabs (for "Lateral raises (side fly)", the name cut short and the count whole); tapping it went
+  back to the gym.
+- Space skipped a rest.
+- On its side (740 × 360): the card on the right, the joystick in its corner, the gym between.
+- With a mouse (800 × 600): no card, the popup over the person with "Skip Space" and "Finish Esc".
+
+The 3D library's known `removeChild` console error (from v9, tracked separately) still appears when the popup goes;
+nothing new appeared. The Android check is optional and not done.
+
+**v10 in one line:** a set has a target, and the partner does exactly that many reps at your tempo, rests between sets
+with a countdown, a beep and a buzz, and starts the next set by itself, all run from a card under your thumb.
+
 ---
 
 ## Not in this plan

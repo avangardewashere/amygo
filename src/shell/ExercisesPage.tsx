@@ -8,18 +8,17 @@ import { lastLine } from '../log/logText'
 import { lastSets } from '../log/sets'
 import { useNow } from './clock'
 import { ExerciseHistoryPage } from './ExerciseHistoryPage'
-import { NowDoing } from './NowDoing'
 import { TargetChip, TargetEditor } from './TargetPicker'
 import { WeightAnnouncer, WeightStepper } from './WeightStepper'
 import { WorkoutSettings } from './WorkoutSettings'
-import { useHistoryKind } from './tabStore'
+import { bringRowIntoView, historyButtonId } from './rowInView'
+import { setRowToShow, useHistoryKind, useRowToShow } from './tabStore'
 import { openHistory } from './tabs'
 
 // What the weight beside Start means on each kind of kit (decision D6)
 export const WEIGHTS_NOTE = 'Weights are for each dumbbell, the stack on a machine, or the bar with its plates.'
 
 // The History button's id for an exercise (focus goes back to it on Back)
-const historyButtonId = (kind: ExerciseKind) => `history-${kind}`
 
 // The Exercises page: everything the gym can do, grouped by machine. Start
 // puts the person on the nearest machine of that kind, doing it, with the
@@ -38,6 +37,14 @@ export function ExercisesPage({ now }: { now?: number }) {
   const clock = useNow(now)
   const historyKind = useHistoryKind()
 
+  // Opened by the workout card's Change: that exercise's row comes into view, the cursor on it
+  const rowToShow = useRowToShow()
+  useEffect(() => {
+    if (!rowToShow) return
+    bringRowIntoView(rowToShow)
+    setRowToShow(null)
+  }, [rowToShow])
+
   // Back from an exercise's history: focus returns to its History button
   const shownBefore = useRef<ExerciseKind | null>(null)
   useEffect(() => {
@@ -49,12 +56,8 @@ export function ExercisesPage({ now }: { now?: number }) {
     <>
       {/* While a history page covers it, the list is kept (with its scroll) but out of reach */}
       <section className="page" aria-labelledby="exercises-title" inert={historyKind !== null}>
-        {/* (focusable from code: the cursor comes here when the card it was on goes) */}
-        <h2 id="exercises-title" tabIndex={-1}>
-          Exercises
-        </h2>
+        <h2 id="exercises-title">Exercises</h2>
         <p className="page-note weights-note">{WEIGHTS_NOTE}</p>
-        <NowDoing />
         {holding && <p className="page-note">Put the dumbbell down first (on Home) to start an exercise.</p>}
         {groups.map((group) => (
           <div key={group.machine} className={`machine-group${group.available ? '' : ' is-unavailable'}`}>

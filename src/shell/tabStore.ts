@@ -12,7 +12,12 @@ export const TABS: { id: Tab; label: string }[] = [
   { id: 'today', label: 'Today' },
 ]
 
-const store = createStore({ tab: 'home' as Tab, history: null as ExerciseKind | null, welcome: false })
+const store = createStore({
+  tab: 'home' as Tab,
+  history: null as ExerciseKind | null,
+  welcome: false,
+  row: null as ExerciseKind | null,
+})
 
 export const useTab = () => store.useSelect((s) => s.tab)
 export const getTab = () => store.get().tab
@@ -22,6 +27,12 @@ export const setTab = (tab: Tab) => store.set({ tab })
 export const useHistoryKind = () => store.useSelect((s) => s.history)
 export const getHistoryKind = () => store.get().history
 export const setHistoryKind = (history: ExerciseKind | null) => store.set({ history })
+
+// The exercise whose row the Exercises list should bring into view when it opens
+// (the workout card's Change), until it has
+export const useRowToShow = () => store.useSelect((s) => s.row)
+export const getRowToShow = () => store.get().row
+export const setRowToShow = (row: ExerciseKind | null) => store.set({ row })
 
 // Is the welcome card open over the gym?
 export const useWelcome = () => store.useSelect((s) => s.welcome)

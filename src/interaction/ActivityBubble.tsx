@@ -14,11 +14,10 @@ import {
 import { betweenText, betweenWords, headline, progressText } from './activityText'
 import { useTicking } from '../lib/ticking'
 
-// The popup over the person's head while they exercise, e.g.
-// "Doing lateral raises · 10 kg" over "Set 1 of 3 · 7 of 12 reps", with Done
-// (this set ends and is saved), buttons to change pace on the treadmill and
-// bike, and Finish when more sets would follow (the round ends too). On the
-// last set Done is all there is to do, so it takes Finish's key, Esc.
+// The popup over the person's head while they exercise (with a mouse: a phone
+// has the workout card), e.g. "Doing lateral raises · 10 kg" over "Set 1 of 3 ·
+// 7 of 12 reps", with Done (this set ends and is saved; Space), buttons to change
+// pace on the treadmill and bike, and Finish (the round ends too; Esc).
 export function ActivityBubble({ activity }: { activity: Activity }) {
   const [now, setNow] = useState(() => performance.now())
 
@@ -29,7 +28,6 @@ export function ActivityBubble({ activity }: { activity: Activity }) {
     return () => clearInterval(timer)
   }, [])
 
-  const moreToCome = activity.target !== undefined && (activity.set ?? 1) < activity.target.sets
   return (
     <div className="activity-bubble" role="status">
       <div>
@@ -45,14 +43,12 @@ export function ActivityBubble({ activity }: { activity: Activity }) {
         ))}
         <button type="button" className="activity-stop" onClick={() => tapDone()}>
           Done
-          {!moreToCome && <kbd className="key-hint">Esc</kbd>}
+          <kbd className="key-hint">Space</kbd>
         </button>
-        {moreToCome && (
-          <button type="button" className="activity-stop" onClick={() => tapFinish()}>
-            Finish
-            <kbd className="key-hint">Esc</kbd>
-          </button>
-        )}
+        <button type="button" className="activity-stop" onClick={() => tapFinish()}>
+          Finish
+          <kbd className="key-hint">Esc</kbd>
+        </button>
       </div>
     </div>
   )
@@ -79,6 +75,7 @@ export function BetweenBubble({ between }: { between: Between }) {
             </button>
             <button type="button" className="activity-stop" onClick={() => tapNextSet()}>
               Skip
+              <kbd className="key-hint">Space</kbd>
             </button>
           </>
         ) : (
